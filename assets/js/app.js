@@ -935,6 +935,11 @@
 
     const social = e.target.closest("[data-social]");
     if (social) {
+      // On a public bio page the icon is a real outbound link. The editor
+      // and phone preview use the same markup for a shortcut, so only the
+      // page inside .bio-page is allowed through.
+      const href = social.getAttribute("href") || "";
+      if (social.closest(".bio-page") && href && href !== "#") return;
       e.preventDefault();
       toast("Social connections — connect in Settings", { icon: "share" });
     }

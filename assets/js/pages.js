@@ -227,7 +227,7 @@
       const meta = S.SOCIAL_PLATFORMS[p];
       if (!meta) return "";
       const linked = links.find((l) => l.platform === p && l.active);
-      return '<a href="' + (linked && linked.url ? esc(S.safeUrl(linked.url)) : "#") + '" data-social="' + p + '" title="' + esc(meta.name) + '"' +
+      return '<a href="' + (linked && linked.url ? esc(S.safeUrl(linked.url)) : "#") + '" target="_blank" rel="noopener" data-social="' + p + '" title="' + esc(meta.name) + '"' +
         (linked ? "" : ' style="opacity:.45"') + ' aria-label="' + esc(meta.name) + '">' + socialMark(p, s) + "</a>";
     }).join("");
   }
@@ -415,7 +415,9 @@
           return "<" + tag + ' class="' + cls + '" style="' + spanStyle(p) + '"' + attrs + ">" +
             tileInner(l, p) + "</" + tag + ">";
         }).join("")
-      : '<div class="phone__empty">No links yet</div>';
+      : S.state.profile.socials.length
+        ? ""
+        : '<div class="phone__empty">No links yet</div>';
 
     return (
       '<div class="phone" data-tex="' + (t.tex ? "1" : "0") + '" data-shape="' + S.style().btnShape + '" data-align="' + S.style().align + '" data-avatar="' + S.style().avatar + '" style="' + style + '">' +
@@ -1242,6 +1244,7 @@
     const profile = remote ? { title: view.name, bio: view.bio } : S.state.profile;
     const layout = remote ? view.layout : S.layout();
     const links = (remote ? view.links : S.buttonLinks()).filter((l) => l.active);
+    const socials = remote ? view.socials : S.state.profile.socials;
     const plan = S.layoutPlan(links);
     const st = remote ? view.style : S.style();
     const style = remote ? S.styleVarsFor(view.style, t) : S.styleVars();
@@ -1273,7 +1276,9 @@
                     esc(S.safeUrl(l.url)) + '" target="_blank" rel="noopener" data-bio-link="' + l.id + '">' +
                     tileInner(l, p) + "</a>";
                 }).join("")
-              : '<div style="opacity:.6;font-size:12px">No links yet</div>') +
+              : socials.length
+                ? ""
+                : '<div style="opacity:.6;font-size:12px">No links yet</div>') +
           "</div>" +
           '<div class="bio-page__foot">' + brandMark(16) + "Made with linkey" +
             '<span class="bio-page__legal"><a href="legal.html#terms" target="_blank" rel="noopener">Terms</a>' +

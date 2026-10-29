@@ -734,6 +734,20 @@ ok("preview: header block uses a div", phone.indexOf('class="phone__link tile--2
 ok("preview: block class present", phone.indexOf("phone__link--block") !== -1);
 ok("preview: the unsafe link has no javascript href", phone.indexOf("javascript:") === -1);
 
+// A page whose only entries are social platforms still has something to
+// click. The icon must be a real outbound link, not a dashboard shortcut.
+D7.state.links = [
+  { id: "soc_ig", kind: "social", platform: "instagram", title: "Instagram", url: "https://instagram.com/ada", active: true }
+];
+D7.state.profile.socials = ["instagram"];
+const socialOnly = bioSandbox.Pages.bioPage();
+const socialAnchor = socialOnly.match(/<a[^>]*data-social="instagram"[^>]*>/);
+ok("bio: the social icon is rendered", !!socialAnchor);
+ok("bio: the social icon opens outbound", !!socialAnchor && socialAnchor[0].indexOf('target="_blank"') !== -1 && socialAnchor[0].indexOf('rel="noopener"') !== -1);
+ok("bio: the social icon carries its url", !!socialAnchor && socialAnchor[0].indexOf('href="https://instagram.com/ada"') !== -1);
+ok("bio: a social-only page does not claim it has no links", socialOnly.indexOf("No links yet") === -1);
+ok("preview: a social-only page does not claim it has no links", bioSandbox.Pages.phoneMarkup().indexOf("phone__empty") === -1);
+
 /* ---- cloud client: unconfigured -------------------------------------- */
 function cloudSandboxWith(config, opts) {
   opts = opts || {};
