@@ -291,10 +291,16 @@
   }
 
   function onClick(e) {
-    const el = e.target.closest("[data-tab],[data-tile],[data-pick],[data-addpop-close],[data-addpop-back],[data-addpop-save],[data-addpop-clear],[data-addpop-overlay]");
+    // The backdrop matches [data-addpop-overlay] and wraps the whole dialog,
+    // so closest() would resolve every click inside the pop-up — including a
+    // click on the Title field — to the backdrop and close it. Only a click
+    // on the backdrop itself counts as "outside".
+    const backdrop = root && root.querySelector("[data-addpop-overlay]");
+    if (backdrop && e.target === backdrop) { close(); return; }
+
+    const el = e.target.closest("[data-tab],[data-tile],[data-pick],[data-addpop-close],[data-addpop-back],[data-addpop-save],[data-addpop-clear]");
     if (!el) return;
 
-    if (el.hasAttribute("data-addpop-overlay")) { close(); return; }
     if (el.hasAttribute("data-addpop-close")) { close(); return; }
     if (el.hasAttribute("data-addpop-clear")) { query = ""; render(); const i = root.querySelector("#addpop-q"); if (i) i.focus(); return; }
     if (el.hasAttribute("data-addpop-back")) { step = "picker"; chosen = null; render(); return; }

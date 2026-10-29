@@ -43,6 +43,15 @@ for (const file of ["assets/js/providers.js", "assets/js/addpop.js"]) {
 const D = sandbox.PICKER;
 const A = sandbox.AddPop;
 
+/* The backdrop wraps the whole Add dialog, so resolving clicks through
+   closest() made every click inside it — including one on the Title field —
+   look like a click on the backdrop and close the sheet. The handler has to
+   compare the click target with the backdrop element itself. */
+const addpopSrc = fs.readFileSync(path.join(ROOT, "assets/js/addpop.js"), "utf8");
+ok("addpop: a click inside the dialog does not close it", /e\.target === backdrop/.test(addpopSrc));
+const closestList = (addpopSrc.match(/e\.target\.closest\("([^"]+)"\)/) || [])[1] || "";
+ok("addpop: the backdrop is no longer resolved with closest()", !!closestList && closestList.indexOf("overlay") === -1);
+
 /* ---- data integrity -------------------------------------------------- */
 ok("PICKER exists", !!D);
 eq("8 tabs", D.TABS.length, 8);
