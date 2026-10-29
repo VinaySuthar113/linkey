@@ -753,13 +753,52 @@
 
   let state = load();
 
+  /**
+   * demoAllowed - the seeded demo account is a development fixture.
+   *
+   * On a real deployment a first-time visitor must land on sign-up, not on
+   * "Vinay Suthar"'s demo dashboard with sample links. The seed stays
+   * available on localhost, on file:// and in the node tests.
+   */
+  function demoAllowed() {
+    if (typeof location === "undefined") return true;
+    if (location.protocol === "file:") return true;
+    return /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(String(location.hostname || ""));
+  }
+
+  /** emptyState - a first-run account with nothing of anyone else in it. */
+  function emptyState() {
+    const s = defaultState();
+    s.user = { name: "", handle: "", email: "", tagline: "", avatar: "" };
+    s.profile = {
+      title: "", bio: "", theme: s.profile.theme, layout: "list",
+      style: {}, socials: [], goal: "", platforms: []
+    };
+    s.links = [];
+    s.collections = [];
+    s.products = [];
+    s.contacts = [];
+    s.posts = [];
+    s.shortLinks = [];
+    s.rules = [];
+    s.notifications = [];
+    s.auth = { signedIn: false, provider: "local", onboarded: false, since: 0, userId: "", email: "", cloud: false };
+    s.settings = Object.assign({}, s.settings, { domain: "", seoTitle: "" });
+    s.ui = Object.assign({}, s.ui, { setup: null });
+    return s;
+  }
+
+  function firstRun() {
+    return demoAllowed() ? defaultState() : emptyState();
+  }
+
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
-      if (!raw) return defaultState();
+      if (!raw) return firstRun();
       const parsed = JSON.parse(raw);
       const base = defaultState();
-      if (parsed.seedVersion !== SEED_VERSION) return base;
+      if (parsed.seedVersion !== SEED_VERSION) return firstRun();
       return {
         ...base,
         ...parsed,
@@ -771,7 +810,7 @@
         stats: { ...base.stats, ...(parsed.stats || {}) }
       };
     } catch (e) {
-      return defaultState();
+      return firstRun();
     }
   }
 
@@ -783,7 +822,7 @@
   function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
   function commit() { save(); listeners.forEach((fn) => fn(state)); }
 
-  function reset() { state = defaultState(); commit(); }
+  function reset() { state = demoAllowed() ? defaultState() : emptyState(); commit(); }
 
   /* ---------- selectors ---------- */
   const theme = () => THEMES[state.profile.theme] || THEMES.chocolate;

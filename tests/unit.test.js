@@ -1328,6 +1328,33 @@ ok("loading: a quiet placeholder", RP.loadingBioPage().indexOf("Loading page") !
 eq("render: a missing page wins over the demo account", RP.render("bio", { missing: "ghost" }).indexOf("ghost") !== -1, true);
 eq("render: own page when there is no context", RP.render("bio").indexOf("bio-page__links") !== -1, true);
 
+/* ---- first run on a real host ----------------------------------------- */
+function storeOn(host, protocol) {
+  const sb = { console, localStorage: memLocal(), URL };
+  sb.location = { hostname: host, protocol: protocol || "https:", pathname: "/", hash: "", search: "" };
+  sb.window = sb;
+  sb.globalThis = sb;
+  vm.createContext(sb);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, "assets/js/store.js"), "utf8"), sb, { filename: "assets/js/store.js" });
+  return sb.Store;
+}
+
+const HOSTED = storeOn("vinaysuthar113.github.io");
+eq("hosted: a first visit is signed out", HOSTED.auth().signedIn, false);
+eq("hosted: a first visit is not onboarded", HOSTED.isOnboarded(), false);
+eq("hosted: no demo links", HOSTED.state.links.length, 0);
+eq("hosted: no demo handle", HOSTED.state.user.handle, "");
+eq("hosted: no demo name", HOSTED.state.user.name, "");
+eq("hosted: no demo bio", HOSTED.state.profile.bio, "");
+eq("hosted: no demo notifications", HOSTED.state.notifications.length, 0);
+eq("hosted: no demo domain", HOSTED.state.settings.domain, "");
+eq("hosted: the built-in theme is still chosen", !!HOSTED.THEMES[HOSTED.state.profile.theme], true);
+const LOCALHOST = storeOn("localhost", "http:");
+eq("localhost: the demo seed stays", LOCALHOST.auth().signedIn, true);
+eq("localhost: the demo has links", LOCALHOST.state.links.length > 0, true);
+const FILEURL = storeOn("", "file:");
+eq("file: the demo seed stays", FILEURL.auth().signedIn, true);
+
 /* ---- report ----------------------------------------------------------- */
 function report() {
   console.log("\n" + pass + " assertions passed");
