@@ -70,6 +70,15 @@ profile and then dropped.
 5. Commit and push. On the login page the Google button now opens Google's
    account chooser.
 
+Two things that catch people out:
+
+- **Configure the OAuth consent screen first** (same console, *OAuth consent
+  screen*): External, app name, support email. `openid email profile` are
+  non-sensitive scopes, so no verification review is needed.
+- While the consent screen is in **Testing**, only the test users you add can
+  sign in (up to 100). Press **Publish app** when you are ready for real
+  visitors.
+
 If the button still explains "not configured", the id did not load — check the
 quote marks, then hard-reload once.
 
