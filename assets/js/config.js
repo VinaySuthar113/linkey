@@ -27,7 +27,7 @@ window.LINKEY_CONFIG = {
   // e.g. "https://abcdefghijklmno.supabase.co"
   supabaseUrl: "https://dmlmgjdmysekesbtuerw.supabase.co",
   // e.g. "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  supabaseAnonKey: "",
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtbG1namRteXNla2VzYnR1ZXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMzk1MDQsImV4cCI6MjEwODgxNTUwNH0.7xbfd5qrI3BA0KDLsaWmbF3EAJAA4Z2rjdTrbTW-E8w",
   // Optional. Defaults to the current origin. Set this when the app is
   // served from a sub-path, or to pin the exact URL registered in Supabase.
   siteUrl: "",

@@ -1301,8 +1301,63 @@
     toast("Photo updated", { icon: "check" });
   }
 
+  /* ---------------- cloud autosave ---------------- */
+
+  /*
+   * Every local change already lands in localStorage through Store.commit().
+   * With a cloud account the same commit must reach Postgres, or the page on
+   * another device stays frozen at onboarding. Store.subscribe() fires after
+   * each commit, so one debounced writer covers every editor path (links,
+   * theme, style, profile) without sprinkling save calls through the UI.
+   */
+  let cloudSaveTimer = 0;
+  let cloudSaving = false;
+  let cloudResave = false;
+  let cloudLastError = "";
+
+  function cloudCanSave() {
+    if (!Cloud || typeof Cloud.isConfigured !== "function" || !Cloud.isConfigured()) return false;
+    const a = S.auth ? S.auth() : null;
+    return !!(a && a.signedIn && a.cloud && a.onboarded);
+  }
+
+  function scheduleCloudSave() {
+    if (!cloudCanSave()) return;
+    clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = setTimeout(flushCloudSave, 1200);
+  }
+
+  function flushCloudSave() {
+    if (!cloudCanSave()) return;
+    if (cloudSaving) { cloudResave = true; return; }
+    cloudSaving = true;
+    let work;
+    try {
+      work = Cloud.savePage(S.cloudSnapshot());
+    } catch (e) {
+      work = Promise.resolve({ ok: false, code: "exception" });
+    }
+    Promise.resolve(work).then((r) => {
+      cloudSaving = false;
+      if (r && !r.ok) {
+        if (r.code === "handle-taken") {
+          toast("That username is taken. Pick another in Settings.", { icon: "alert" });
+        } else if (r.code !== "no-session" && r.code !== "unconfigured" && cloudLastError !== (r.code || "error")) {
+          cloudLastError = r.code || "error";
+          toast("Saved on this device; cloud sync will retry.", { icon: "alert" });
+        }
+      } else {
+        cloudLastError = "";
+      }
+      if (cloudResave) { cloudResave = false; flushCloudSave(); }
+    }, () => {
+      cloudSaving = false;
+      if (cloudResave) { cloudResave = false; flushCloudSave(); }
+    });
+  }
+
   /* ---------------- boot ---------------- */
-  S.subscribe(() => {});
+  S.subscribe(scheduleCloudSave);
   window.addEventListener("hashchange", renderApp);
   if (!location.hash && !pathHandle()) location.hash = "#/links";
 
