@@ -1440,19 +1440,26 @@
     ].join("");
     // The demo notice is not decoration: without keys, Google cannot sign
     // anyone in, and silently creating a local account would look like a
-    // successful Google login. Say what is happening and offer the demo
-    // deliberately.
+    // successful Google login. Say what is happening, in the visitor's
+    // words on a deployed site and in the developer's words on localhost.
+    const localDemo = typeof S.demoAllowed === "function" ? S.demoAllowed() : true;
     const notice = cloudOn
       ? ""
       : googleLive
         ? '<p class="auth__note" data-google-note>Google sign-in runs in your browser. ' +
           "No password is stored on this device.</p>"
-        : '<p class="auth__note auth__note--warn" data-demo-note>' +
-          "<b>Google sign-in is not configured yet.</b> Add a public Google client id to " +
-          "<code>assets/js/config.js</code> (no secret needed) and the button appears here. " +
-          '<button type="button" class="auth__inline-link" data-action="google-help">How to set it up</button>' +
-          "</p>";
-    const demoButton = m === "forgot" || cloudOn || googleLive
+        : localDemo
+          ? '<p class="auth__note auth__note--warn" data-demo-note>' +
+            "<b>Google sign-in is not configured yet.</b> Add a public Google client id to " +
+            "<code>assets/js/config.js</code> (no secret needed) and the button appears here. " +
+            '<button type="button" class="auth__inline-link" data-action="google-help">How to set it up</button>' +
+            "</p>"
+          : '<p class="auth__note" data-demo-note>' +
+            "Google sign-in isn’t connected on this beta yet. Create your account with your email above — " +
+            "it works right away. " +
+            '<button type="button" class="auth__inline-link" data-action="google-help">Owner setup</button>' +
+            "</p>";
+    const demoButton = !localDemo || m === "forgot" || cloudOn || googleLive
       ? ""
       : '<button class="auth__demo" type="button" data-action="demo-signin">Explore the demo account instead</button>';
     const socials = m === "forgot" || !oauthButtons

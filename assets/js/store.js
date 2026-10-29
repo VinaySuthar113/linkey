@@ -1583,7 +1583,7 @@
     layout, setLayout, autoSpan, layoutPlan, cycleSpan,
     productTotals,
     auth, isSignedIn, isOnboarded, signIn, signUp, signOut, signInWithProvider,
-    adoptCloudUser, adoptProviderUser, completeSetup, signUpIntent, pendingSignup,
+    adoptCloudUser, adoptProviderUser, completeSetup, signUpIntent, pendingSignup, demoAllowed,
     BACKUP_KEY,
     normalizeHandle, handleIssue, handleSuggestions, emailIssue,
     addLink, updateLink, deleteLink, moveLink, toggleLink,

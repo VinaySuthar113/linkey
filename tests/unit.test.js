@@ -1355,6 +1355,24 @@ eq("localhost: the demo has links", LOCALHOST.state.links.length > 0, true);
 const FILEURL = storeOn("", "file:");
 eq("file: the demo seed stays", FILEURL.auth().signedIn, true);
 
+/* the auth screen speaks to a visitor on a real host, and to a developer locally */
+function pagesOn(store, loc) {
+  const sb = { console, Store: store, icon: () => "<svg></svg>", URL, location: loc, LINKEY_CONFIG: {} };
+  sb.window = sb;
+  sb.globalThis = sb;
+  vm.createContext(sb);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, "assets/js/pages.js"), "utf8"), sb, { filename: "assets/js/pages.js" });
+  return sb.Pages;
+}
+const HOST_LOC = { protocol: "https:", hostname: "vinaysuthar113.github.io", pathname: "/linkey/", origin: "https://vinaysuthar113.github.io", hash: "", search: "", href: "https://vinaysuthar113.github.io/linkey/" };
+const LOCAL_LOC = { protocol: "http:", hostname: "localhost", pathname: "/", origin: "http://localhost:5200", hash: "", search: "", href: "http://localhost:5200/" };
+const hostedLogin = pagesOn(HOSTED, HOST_LOC).render("login");
+ok("hosted login: no demo button", hostedLogin.indexOf("demo-signin") === -1);
+ok("hosted login: the notice speaks to a visitor", hostedLogin.indexOf("isn’t connected on this beta") !== -1, hostedLogin.slice(0, 200));
+ok("hosted login: the owner can still find the guide", hostedLogin.indexOf("google-help") !== -1);
+ok("hosted signup: no demo button", pagesOn(HOSTED, HOST_LOC).render("signup").indexOf("demo-signin") === -1);
+ok("localhost login: the demo button stays", pagesOn(LOCALHOST, LOCAL_LOC).render("login").indexOf("demo-signin") !== -1);
+
 /* ---- report ----------------------------------------------------------- */
 function report() {
   console.log("\n" + pass + " assertions passed");
