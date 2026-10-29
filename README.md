@@ -19,6 +19,10 @@ python -m http.server 5199 --bind 127.0.0.1
 # http://127.0.0.1:5199/index.html
 ```
 
+On localhost the app opens on a seeded demo account (so the dashboard is
+explorable without signing up). On any other host a first visit starts signed
+out, on the login screen — the seed never ships to real users.
+
 To test clean public URLs (`/u/<handle>`) locally, use the SPA fallback server:
 
 ```bash
