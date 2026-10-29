@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>QA — layout harness</title>
+<!--
+  Seeds a layout, then hands over to the real app.
+
+    qa/layout.html?layout=bento&hash=%23/bio
+    qa/layout.html?layout=grid&hash=%23/links
+    qa/layout.html?layout=custom&hash=%23/links
+
+  Only `profile.layout` is written; every other field falls back to the
+  default state, so the harness cannot drift from the real seed.
+  It overwrites localStorage for this origin — use a throwaway profile.
+-->
+<script>
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var layout = q.get("layout") || "bento";
+    var hash = q.get("hash") || "#/links";
+    try {
+      localStorage.setItem("linkey.state.v1", JSON.stringify({
+        seedVersion: 2,
+        profile: { layout: layout }
+      }));
+    } catch (e) { /* private mode */ }
+    location.replace("../index.html" + hash);
+  })();
+</script>
+</head>
+<body></body>
+</html>

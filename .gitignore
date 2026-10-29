@@ -1,0 +1,14 @@
+# QA captures and scratch output, not source
+qa/*.png
+qa/*.jpeg
+qa/*_dom.html
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.log

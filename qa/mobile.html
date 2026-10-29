@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>QA — mobile frame</title>
+<style>
+  html, body { margin: 0; background: #ddd; }
+  body { display: flex; gap: 20px; padding: 20px; align-items: flex-start; }
+  iframe { border: 0; background: #fff; box-shadow: 0 8px 30px rgba(0,0,0,.18); }
+</style>
+<script>
+  // Seeds a layout, then loads the app inside a real 390px viewport so
+  // the mobile media queries actually fire.
+  //
+  //   qa/mobile.html?hash=%23/bio&layout=bento
+  //   qa/mobile.html?auth=out            → signed out
+  //   qa/mobile.html?auth=setup&step=3   → setup step 1–5
+  //   qa/mobile.html?auth=welcome
+  //
+  // The setup draft mirrors Store.freshSetup() so every step has content.
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var seed = { seedVersion: 2, profile: { layout: q.get("layout") || "bento" } };
+    var auth = q.get("auth");
+
+    function setupDraft() {
+      var step = Math.min(5, Math.max(1, Number(q.get("step") || 1)));
+      var empty = q.get("empty") === "1";
+      return {
+        step: step,
+        handle: "vinay.suthar",
+        name: empty ? "" : "Vinay Suthar",
+        bio: empty ? "" : "Design that feels personal.",
+        avatar: "",
+        goal: empty ? "" : "grow",
+        theme: q.get("theme") || "chocolate",
+        platforms: empty ? [] : ["instagram", "youtube", "website"],
+        values: empty ? {} : { instagram: "vinay.suthar", youtube: "@vinaysuthar", website: "vinaysuthar.com" },
+        extras: empty ? ["", "", ""] : ["https://substack.com/@vinay", "", ""],
+        layout: q.get("layout") || "bento"
+      };
+    }
+
+    if (auth === "out") {
+      seed.auth = { signedIn: false, provider: "local", onboarded: true, since: 0 };
+    } else if (auth === "setup") {
+      seed.auth = { signedIn: true, provider: "local", onboarded: false, since: 1 };
+      seed.ui = { setup: setupDraft() };
+    } else if (auth === "welcome") {
+      seed.auth = { signedIn: true, provider: "local", onboarded: true, since: 1 };
+    }
+    try {
+      localStorage.setItem("linkey.state.v1", JSON.stringify(seed));
+    } catch (e) {}
+    var hash = q.get("hash") || (auth === "setup" ? "#/setup" : "#/bio");
+    var w = Number(q.get("w") || 390);
+    var h = Number(q.get("h") || 844);
+    var f = document.createElement("iframe");
+    f.width = w; f.height = h;
+    f.src = "../index.html" + hash;
+    f.id = "frame";
+    document.addEventListener("DOMContentLoaded", function () { document.body.appendChild(f); });
+  })();
+</script>
+</head>
+<body></body>
+</html>

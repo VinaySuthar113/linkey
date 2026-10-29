@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>QA — auth harness</title>
+<!--
+  Seeds an auth state, then hands over to the real app.
+
+    qa/auth.html?mode=login     → signed out, on #/login
+    qa/auth.html?mode=signup    → signed out, on #/signup
+    qa/auth.html?mode=forgot    → signed out, on #/forgot
+    qa/auth.html?mode=welcome   → onboarded, on #/welcome
+    qa/auth.html?mode=setup&step=1|2|3|4|5
+
+  Setup steps accept three extra switches:
+
+    ?empty=1     start the draft blank (first-run state)
+    ?cap=1       select five platforms on step 3 (the cap state)
+    ?handle=…    override the draft handle
+
+  Only `auth` and `ui.setup` are written; every other field falls back to
+  the default state, so the harness cannot drift from the real seed.
+  It overwrites localStorage for this origin — use a throwaway profile.
+-->
+<script>
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var mode = q.get("mode") || "login";
+    var step = Math.min(5, Math.max(1, Number(q.get("step") || 1)));
+    var seed = { seedVersion: 2 };
+
+    /* The setup draft must have the same shape Store.freshSetup() makes,
+       or a step renders its "nothing chosen yet" state by accident. */
+    function setupDraft() {
+      var empty = q.get("empty") === "1";
+      var cap = q.get("cap") === "1";
+      var handle = q.get("handle") || "vinay.suthar";
+      var platforms = empty ? [] : cap ? ["instagram", "youtube", "threads", "website", "whatsapp"] : ["instagram", "youtube", "website"];
+      return {
+        step: step,
+        handle: handle,
+        name: empty ? "" : "Vinay Suthar",
+        bio: empty ? "" : "Design that feels personal.",
+        avatar: empty ? "" : "",
+        goal: empty ? "" : "grow",
+        theme: q.get("theme") || "chocolate",
+        platforms: platforms,
+        values: empty ? {} : {
+          instagram: "vinay.suthar",
+          youtube: "@vinaysuthar",
+          threads: "vinay.suthar",
+          website: "vinaysuthar.com",
+          whatsapp: "+91 98765 43210"
+        },
+        extras: empty ? ["", "", ""] : ["https://substack.com/@vinay", "vinaysuthar.com/notebook", ""],
+        layout: q.get("layout") || "bento"
+      };
+    }
+
+    if (mode === "setup") {
+      seed.auth = { signedIn: true, provider: "local", onboarded: false, since: 1 };
+      seed.ui = { setup: setupDraft() };
+    } else if (mode === "welcome") {
+      seed.auth = { signedIn: true, provider: "local", onboarded: true, since: 1 };
+    } else {
+      seed.auth = { signedIn: false, provider: "local", onboarded: true, since: 0 };
+    }
+
+    var hash = "#/" + (mode === "setup" ? "setup" : mode);
+    try { localStorage.setItem("linkey.state.v1", JSON.stringify(seed)); } catch (e) {}
+    location.replace("../index.html" + hash);
+  })();
+</script>
+</head>
+<body></body>
+</html>

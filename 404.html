@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Linkey</title>
+    <script>
+      // GitHub Pages fallback: keeps /u/<handle> shareable by handing it to the SPA.
+      (function () {
+        var path = location.pathname;
+        var m = path.match(/\/u\/([^/?#]+)\/?$/);
+        var base = path.replace(/u\/[^/]+\/?$/, "");
+        location.replace(base + "index.html" + (m ? "#/u/" + m[1] : ""));
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>

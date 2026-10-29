@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>QA — public page, every format</title>
+<!--
+  Seeds a finished page that uses all eight link kinds, then opens it.
+
+    qa/bio.html?layout=list|bento|grid|custom
+    qa/bio.html?layout=bento&theme=halo
+    qa/bio.html?layout=grid&handle=ada.chen
+
+  The seed matches Store.state exactly, so the harness cannot drift from the
+  real account shape. It overwrites localStorage for this origin — use a
+  throwaway profile.
+-->
+<script>
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var layout = q.get("layout") || "list";
+    var theme = q.get("theme") || "halo";
+    var handle = q.get("handle") || "ada.chen";
+
+    var links = [
+      { id: "lnk_hd000001", kind: "header", title: "Selected work", url: "", active: true, clicks: 0, views: 0 },
+      { id: "lnk_so000001", kind: "social", platform: "instagram", title: "Instagram", url: "https://instagram.com/ada.chen", active: true, clicks: 214, views: 0 },
+      { id: "lnk_tx000001", kind: "text", title: "I build design systems and typefaces for small teams. Open for two projects this winter.", url: "", active: true, clicks: 0, views: 0 },
+      { id: "lnk_pd000001", kind: "product", title: "Grid Poster - A1", url: "https://shop.example.com/poster", price: 38, note: "Signed edition", active: true, clicks: 42, views: 0 },
+      { id: "lnk_ev000001", kind: "event", title: "Type walk, Shoreditch", url: "https://lu.ma/typewalk", date: "2026-11-14", note: "London - 6pm", active: true, clicks: 18, views: 0 },
+      { id: "lnk_vd000001", kind: "video", title: "Making a variable font", url: "https://youtube.com/watch?v=abc123", note: "12 min", active: true, clicks: 96, views: 0 },
+      { id: "lnk_fm000001", kind: "form", title: "Join the letter", url: "https://ada.substack.com/subscribe", active: true, clicks: 31, views: 0 },
+      { id: "lnk_lk000001", kind: "link", title: "Personal website", url: "https://northwind.com", active: true, clicks: 54, views: 0 }
+    ];
+
+    var seed = {
+      seedVersion: 2,
+      user: {
+        name: "Ada Chen",
+        handle: handle,
+        email: "ada@northwind.com",
+        tagline: "Design systems and type.",
+        avatar: ""
+      },
+      profile: {
+        title: "Ada Chen",
+        bio: "Design systems and type.",
+        theme: theme,
+        layout: layout,
+        socials: ["instagram"],
+        goal: "build",
+        platforms: ["instagram"]
+      },
+      links: links,
+      settings: {
+        domain: "linkey.app/" + handle,
+        seoTitle: "Ada Chen - links",
+        seoDescription: "Design systems and type.",
+        viewMode: "list"
+      },
+      auth: q.get("visitor") === "1"
+        ? { signedIn: false, provider: "local", onboarded: true, since: 0 }
+        : { signedIn: true, provider: "local", onboarded: true, since: 0, userId: "", email: "", cloud: false }
+    };
+
+    try { localStorage.setItem("linkey.state.v1", JSON.stringify(seed)); } catch (e) {}
+    var hash = q.get("hash") || "#/u/" + encodeURIComponent(handle);
+    location.replace("../index.html" + hash);
+  })();
+</script>
+</head>
+<body></body>
+</html>
