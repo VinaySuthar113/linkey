@@ -144,8 +144,10 @@ other people.
 
    It reads the public config, then checks the auth server, enabled providers,
    the pages table, that a visitor can read the public projection, that
-   `user_id` is not readable, and that the anon key cannot write. Fix every
-   `FAIL` before deploying; `WARN` items are delivery or provider choices.
+   `user_id` is not readable, and that the anon key cannot write. It also
+   follows the Google authorize redirect and names the exact callback URI if
+   Google rejects it. Fix every `FAIL` before deploying; `WARN` items are
+   delivery or provider choices.
 
 5. **Authentication → Providers → Google**: enable it, paste the client id and
    secret from step 2, and add `https://<project>.supabase.co/auth/v1/callback`
@@ -181,6 +183,8 @@ curl "https://<project>.supabase.co/rest/v1/pages?select=handle,data" \
 | Old build loads after a deploy | browser cache | bump `?v=` in `index.html` / `legal.html` |
 | Google button opens the setup modal | `googleClientId` empty or wrong shape | step 2 |
 | Google says "origin mismatch" | JS origin missing the deployed domain | add the origin (no path), no trailing slash |
+| Google says "redirect_uri_mismatch" | the Supabase callback is not on the Google client | add `https://<project>.supabase.co/auth/v1/callback` under **Authorised redirect URIs**; `node tools/check-supabase.mjs` names the exact URI and client |
+| Google button returns to the login page with no error | `redirect_to` is not in Supabase's allow-list | Authentication → URL configuration: add the deployed URL and `http://localhost:5200/` |
 | "hasn't published here yet" on your own link | you are on another browser and step 4 is not configured | steps 1 and 4 |
 | Signup works, refresh loses the account | same | step 4 |
 | `/u/<handle>` 404s | host has no rewrites | use `linkBase: "hash"`, or Cloudflare Pages |

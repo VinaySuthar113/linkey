@@ -148,6 +148,7 @@ async function main() {
   };
 
   // 1. auth server + enabled providers -----------------------------------
+  let googleOn = false;
   try {
     const r = await request(`${cfg.url}/auth/v1/settings`, { headers });
     if (!r.ok) {
@@ -165,6 +166,7 @@ async function main() {
       if (ext.google) pass("Google provider", "enabled in Supabase");
       else warn("Google provider", "off",
         "Enable it only if you plan to use Supabase Google sign-in; the no-server GIS path needs googleClientId instead.");
+      googleOn = !!ext.google;
       if (ext.email && r.body && r.body.mailer_autoconfirm === false) {
         warn("email delivery", "confirmations are on; Supabase's built-in SMTP is rate-limited",
           "Authentication → Emails: configure custom SMTP before inviting real users.");
@@ -199,6 +201,58 @@ async function main() {
     }
   } catch (e) {
     fail("pages table readable", e.name === "AbortError" ? "timed out" : e.message);
+  }
+
+  // 1b. does Google accept Supabase's callback? --------------------------
+  //
+  // Authorize returns a 302 to Google. Following it, with no credentials,
+  // reaches either Google's consent screen or an OAuth error page. This is
+  // the check that catches the most common real-world failure: the callback
+  // was never added to the Google client, so the button looks live and
+  // every sign-in dies at Google.
+  if (googleOn) {
+    try {
+      const authUrl = new URL(`${cfg.url}/auth/v1/authorize`);
+      authUrl.searchParams.set("provider", "google");
+      authUrl.searchParams.set("code_challenge", "a".repeat(43));
+      authUrl.searchParams.set("code_challenge_method", "s256");
+      const res = await fetch(authUrl, {
+        headers: { apikey: cfg.key },
+        redirect: "follow",
+        signal: AbortSignal.timeout(20000)
+      });
+      const finalUrl = res.url || "";
+      const final = new URL(finalUrl);
+      const authError = final.searchParams.get("authError") || "";
+      let decoded = "";
+      try {
+        decoded = Buffer.from(authError.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
+      } catch { decoded = ""; }
+      const clientId = final.searchParams.get("client_id") || "";
+      const callback = `${cfg.url}/auth/v1/callback`;
+      const onErrorPage = /\/signin\/oauth\/error/.test(final.pathname);
+      if (/redirect_uri_mismatch/.test(decoded)) {
+        fail("Google accepts the Supabase callback", "redirect_uri_mismatch",
+          `Add ${callback} to the Google client's Authorised redirect URIs` +
+          (clientId ? ` (client ${clientId})` : "") + ", then re-run.");
+      } else if (/invalid_client|unauthorized_client/.test(decoded)) {
+        fail("Google accepts the Supabase client", "Google rejected the client id or secret",
+          "Re-paste the OAuth client id and secret in Supabase → Authentication → Providers → Google.");
+      } else if (onErrorPage) {
+        fail("Google authorize reachable", decoded.slice(0, 160) || "Google returned an OAuth error page",
+          "Open the URL in a browser for the full message, then fix the Google client.");
+      } else if (!res.ok) {
+        fail("Google authorize reachable", `HTTP ${res.status} ${finalUrl.slice(0, 120)}`);
+      } else if (/accounts\.google\.com/.test(finalUrl)) {
+        pass("Google accepts the Supabase callback", "consent screen reachable");
+      } else {
+        pass("Google authorize reachable", finalUrl.slice(0, 120));
+      }
+    } catch (e) {
+      fail("Google accepts the Supabase callback",
+        e.name === "TimeoutError" ? "timed out" : e.message,
+        "Check that the Supabase project is not paused and that Google is reachable.");
+    }
   }
 
   // 2b. handle availability RPC -----------------------------------------
