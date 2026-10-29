@@ -131,41 +131,34 @@ other people.
    The anon key is public by design; RLS is what protects the data. Never paste
    a service-role key into a browser file.
 
-3. **SQL editor** — the table, the owner-only policies, and a read-only public
-   projection:
+3. **SQL editor** — run [`supabase/schema.sql`](supabase/schema.sql) (paste the
+   whole file, press Run). It creates the table, the lowercase unique handle,
+   owner-only RLS, the published-only public projection, and column grants that
+   keep `user_id` private. It is idempotent, so re-running after an edit is safe.
 
-   ```sql
-   create table if not exists public.pages (
-     user_id    uuid primary key references auth.users (id) on delete cascade,
-     handle     text unique not null check (handle ~ '^[a-z0-9._-]{3,30}$'),
-     onboarded  boolean not null default false,
-     data       jsonb not null default '{}'::jsonb,
-     updated_at timestamptz not null default now()
-   );
+4. **Verify the wiring** from the repo root:
 
-   alter table public.pages enable row level security;
-
-   create policy pages_owner_read   on public.pages for select using (auth.uid() = user_id);
-   create policy pages_owner_write  on public.pages for insert with check (auth.uid() = user_id);
-   create policy pages_owner_update on public.pages for update using (auth.uid() = user_id);
-   create policy pages_owner_delete on public.pages for delete using (auth.uid() = user_id);
-
-   -- Visitors may read published pages, and only these three columns.
-   create policy pages_public_read on public.pages
-     for select to anon using (onboarded = true and handle is not null);
-
-   revoke select on public.pages from anon;
-   grant select (handle, onboarded, data) on public.pages to anon;
+   ```bash
+   node tools/check-supabase.mjs
    ```
 
-4. **Authentication → Providers → Google**: enable it, paste the client id and
+   It reads the public config, then checks the auth server, enabled providers,
+   the pages table, that a visitor can read the public projection, that
+   `user_id` is not readable, and that the anon key cannot write. Fix every
+   `FAIL` before deploying; `WARN` items are delivery or provider choices.
+
+5. **Authentication → Providers → Google**: enable it, paste the client id and
    secret from step 2, and add `https://<project>.supabase.co/auth/v1/callback`
    to the Google client's **Authorised redirect URIs**.
-5. **Authentication → URL configuration**: Site URL is your deployed URL; add
+6. **Authentication → URL configuration**: Site URL is your deployed URL; add
    `https://<user>.github.io/linkey/` and `http://localhost:5200/` to the
    redirect allow-list.
-6. Commit and push. The login page switches to the cloud flow and the account
+7. Commit and push. The login page switches to the cloud flow and the account
    is saved after each change.
+
+One handle is one page: the unique index means two accounts cannot publish the
+same username. The setup form checks availability before it goes live and says
+so if the name was taken in another browser.
 
 Test it: sign in on a phone with a fresh browser, open the shared link on a
 laptop, and confirm the page (not the empty state) appears. Then open the same

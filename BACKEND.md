@@ -85,19 +85,25 @@ and a span, and reordering needs a stable array. One row means one atomic write,
 no partial pages, and a restore path that is already covered by
 `Store.sanitizeLink()`.
 
+The canonical schema lives in [`supabase/schema.sql`](supabase/schema.sql); run
+that file rather than retyping the DDL. It creates:
+
 ```sql
 create table public.pages (
   user_id    uuid primary key references auth.users(id) on delete cascade,
-  handle     text not null,
+  handle     text not null,              -- lowercase, unique, URL-safe
   onboarded  boolean not null default false,
   data       jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
--- one page per handle, case-insensitively
-create unique index pages_handle_key on public.pages (lower(handle));
-create index pages_updated_idx on public.pages (updated_at desc);
+create unique index pages_handle_key on public.pages (handle);
 ```
+
+A `handle_taken(text)` function (SECURITY DEFINER, boolean only) lets signup ask
+whether an address is free without exposing another account's draft. The unique
+index is the backstop for a race between two simultaneous claims.
 
 `data` is exactly what `Store.cloudSnapshot()` returns:
 
@@ -122,38 +128,32 @@ The client re-sanitises every field on read, so a tampered row cannot inject a
 
 ### 2.3 Row-level security
 
-```sql
-alter table public.pages enable row level security;
+`supabase/schema.sql` installs four owner policies (`select`, `insert`,
+`update`, `delete` on `auth.uid() = user_id`), one published-only policy for the
+`anon` role, and column grants:
 
--- the owner may read and write their own page
-create policy pages_owner_read on public.pages
-  for select using (auth.uid() = user_id);
+- `anon` may `select (handle, onboarded, data)` from published rows only.
+- `authenticated` may read and write its own row; the `with check` clause stops
+  a caller writing a row for another user id.
+- `user_id`, timestamps and drafts are never part of the public projection.
 
-create policy pages_owner_write on public.pages
-  for insert with check (auth.uid() = user_id);
-
-create policy pages_owner_update on public.pages
-  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
-create policy pages_owner_delete on public.pages
-  for delete using (auth.uid() = user_id);
-```
-
-Public read is opt-in. The beta default reads pages through the authenticated
-owner only. `Cloud.loadPublicPage(handle)` is already wired into the public
-route, so adding the policy in `DEPLOY.md §4` (`pages_public_read`, with
-`select` granted on `handle, onboarded, data` only) makes shared links resolve
-for signed-out visitors — nothing else in the client changes.
+Public read is therefore on by default in the shipped schema, not opt-in.
+`Cloud.loadPublicPage(handle)` uses it, so a shared link resolves for a
+signed-out visitor without any client change. If you prefer the beta default
+(shared links only work when signed in), drop the `pages_public_read` policy and
+the anon grant.
 
 Verify with a second account: sign in as A, then call
 
 ```js
-fetch(URL + "/rest/v1/pages?select=*", { headers: { apikey, Authorization: "Bearer " + otherToken } })
+fetch(URL + "/rest/v1/pages?select=handle,onboarded,data", {
+  headers: { apikey, Authorization: "Bearer " + otherToken }
+})
 ```
 
 and confirm you get `[]`, not B's row. A missing policy is a data leak, not a bug.
-With the public policy installed, an anonymous call must return only published
-rows and only the three granted columns.
+An anonymous call must return only published rows and only the three granted
+columns; `select=user_id` or `select=*` must fail.
 
 ### 2.4 Google sign-in
 

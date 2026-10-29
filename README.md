@@ -333,9 +333,10 @@ the licensed stand-in (see `THIRD_PARTY.md`).
    **Authorised JavaScript origins**. The Google button then opens the real
    account chooser; until then it explains what is missing instead of pretending
    to sign in.
-3. Optional: create a Supabase project, paste the URL + anon key, run the
-   `pages` table SQL and add the public read policy (`DEPLOY.md §4`). This makes
-   accounts survive a new browser and makes shared links resolve.
+3. Optional: create a Supabase project, paste the URL + anon key, run
+   `supabase/schema.sql`, then run `node tools/check-supabase.mjs`
+   (`DEPLOY.md §4`). This makes accounts survive a new browser and makes shared
+   links resolve.
 4. Open the hosted `/u/<handle>` on a phone and sign in with a Google account
    that has never touched the app.
 5. Only then invite testers. The demo account and the Google account are

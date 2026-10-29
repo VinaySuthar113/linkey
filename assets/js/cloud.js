@@ -457,7 +457,42 @@
       query: { on_conflict: "user_id" },
       body: body
     });
-    return r.ok ? { ok: true } : r;
+    if (r.ok) return { ok: true };
+    // Postgres unique_violation on pages_handle_key. Reported so the setup
+    // form can say "taken" instead of silently failing to publish.
+    if (r.status === 409 || (r.data && r.data.code === "23505")) {
+      return { ok: false, code: "handle-taken", error: "That username is already taken." };
+    }
+    return r;
+  }
+
+  /**
+   * handleTaken - is this public address free?
+   *
+   * Calls a SECURITY DEFINER function because RLS hides other people's
+   * drafts from the anon role; a plain select would only see published
+   * pages and would happily hand out a name that is already reserved.
+   * Returns {ok:true, taken:false} when the check cannot run, so a missing
+   * migration never blocks onboarding; the unique index is still the
+   * backstop.
+   */
+  async function handleTaken(handle) {
+    if (!configured) return { ok: true, taken: false, code: "unconfigured" };
+    const h = String(handle || "").trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9._-]{1,28}[a-z0-9]$/.test(h)) {
+      return { ok: true, taken: false, code: "invalid" };
+    }
+    const token = await accessToken();
+    const r = await request("/rest/v1/rpc/handle_taken", {
+      method: "POST",
+      token: token || "",
+      body: { candidate: h }
+    });
+    if (!r.ok) {
+      // 404 / PGRST202: schema.sql has not been applied yet.
+      return { ok: false, taken: false, code: "unavailable", error: r.error, status: r.status };
+    }
+    return { ok: true, taken: r.data === true };
   }
 
   /* ---------------- Google Identity Services (no server) ---------------- */
@@ -670,7 +705,7 @@
     ready, session, user, refresh, normalizeUser, isFresh, isExpired,
     signInWithOAuth, sendEmailLink, signOut,
     completeRedirect, parseRedirect, hasAuthParams, stripAuthParams, redirectTo, authorizeUrl,
-    loadPage, savePage, loadPublicPage,
+    loadPage, savePage, loadPublicPage, handleTaken,
     googleConfigured, signInWithGoogle, mode, verifyGoogleProfile,
     // Exposed for tests only; not part of the app surface.
     _internals: { base64url, challengeFor, randomToken, urlAllowed, basePath, readJSON, writeJSON, STORE, VERIFIER, GCLIENT, USERINFO }

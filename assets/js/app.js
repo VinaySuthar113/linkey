@@ -696,7 +696,14 @@
     },
     "setup-skip": () => {
       const d = P.setupDraft();
-      if (d.step >= 5) return finishSetup(d, null);
+      if (d.step >= 5) {
+        finishSetup(d, null).then((r) => {
+          if (!r || r.ok) return;
+          const form = document.querySelector('[data-setup-form="5"]');
+          if (form) formError(form, r.error, r.field);
+        }).catch(() => {});
+        return;
+      }
       S.state.ui.setup = Object.assign(d, { step: d.step + 1 });
       S.commit();
       refresh();
@@ -982,6 +989,12 @@
       // Remember the choices across the redirect, then prove the email.
       const intent = S.signUpIntent(input);
       if (!intent.ok) return formError(form, intent.error, intent.field);
+      // The address is public; reserve it before sending a sign-in link.
+      let taken = null;
+      try { taken = await Cloud.handleTaken(input.handle); } catch (e) { taken = null; }
+      if (taken && taken.ok && taken.taken) {
+        return formError(form, "That username is already taken. Try another.", "handle");
+      }
       return sendLink(form, String(input.email || "").trim(), "Check your inbox — we sent a link to finish creating your account.", true);
     }
 
@@ -1022,8 +1035,18 @@
    * finishSetup - write the five answers to the account and go live.
    * Returns the Store result so a form can point at the bad field.
    */
-  function finishSetup(d, links) {
+  async function finishSetup(d, links) {
     const list = Array.isArray(links) ? links : S.starterLinks(d.platforms, d.values, d.extras);
+    // One handle is one page. Check before the local account goes live so a
+    // collision is an error on the form, not a page that silently never
+    // reaches the server.
+    if (Cloud && Cloud.isConfigured()) {
+      let check = null;
+      try { check = await Cloud.handleTaken(d.handle); } catch (e) { check = null; }
+      if (check && check.ok && check.taken) {
+        return { ok: false, field: "handle", error: "That username is already taken. Go back and choose another." };
+      }
+    }
     const r = S.completeSetup({
       handle: d.handle,
       name: d.name,
@@ -1038,14 +1061,18 @@
     if (!r.ok) return r;
     if (Cloud && Cloud.isConfigured()) {
       // Best effort: a failed cloud write must not block a live page.
-      Cloud.savePage(S.cloudSnapshot()).catch(() => {});
+      Cloud.savePage(S.cloudSnapshot()).then((saved) => {
+        if (saved && !saved.ok && saved.code === "handle-taken") {
+          toast("That username was taken while you finished. Choose another in Settings.", { icon: "alert" });
+        }
+      }).catch(() => {});
     }
     navigate("welcome");
     toast("Your page is live", { icon: "check" });
     return r;
   }
 
-  function submitSetup(form) {
+  async function submitSetup(form) {
     const step = Number(form.dataset.setupForm);
     const d = P.setupDraft();
     const fd = new FormData(form);
@@ -1093,7 +1120,7 @@
     const name = String(fd.get("name") || "").trim();
     if (name.length < 2) return formError(form, "Tell us your name.", "name");
     const bio = String(fd.get("bio") || "").trim().slice(0, 160);
-    const r = finishSetup(Object.assign({}, d, { name: name, bio: bio }), null);
+    const r = await finishSetup(Object.assign({}, d, { name: name, bio: bio }), null);
     if (!r.ok) return formError(form, r.error, r.field);
   }
 
@@ -1106,14 +1133,17 @@
     hint.classList.toggle("is-good", !issue && h.length >= S.HANDLE_MIN);
     hint.textContent = !h
       ? "Letters, numbers, dots, dashes or underscores."
-      : issue || "linkey.app/" + h + " is available";
+      : issue || "linkey.app/" + h + " looks good";
   }
 
   document.addEventListener("submit", (e) => {
     const form = e.target;
     if (!form || !form.dataset) return;
     if (form.dataset.authForm) { e.preventDefault(); submitAuth(form); }
-    else if (form.dataset.setupForm) { e.preventDefault(); submitSetup(form); }
+    else if (form.dataset.setupForm) {
+      e.preventDefault();
+      submitSetup(form).catch(() => formError(form, "Something went wrong. Try again."));
+    }
   });
 
   /* ---------------- inputs ---------------- */

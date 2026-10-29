@@ -25,7 +25,7 @@ window.LINKEY_CONFIG = {
   // without rewrites, "path" when you have them (Cloudflare/Vercel/Netlify).
   linkBase: "auto",
   // e.g. "https://abcdefghijklmno.supabase.co"
-  supabaseUrl: "",
+  supabaseUrl: "https://dmlmgjdmysekesbtuerw.supabase.co",
   // e.g. "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   supabaseAnonKey: "",
   // Optional. Defaults to the current origin. Set this when the app is

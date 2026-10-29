@@ -891,6 +891,54 @@ const noSession = await cc.Cloud.savePage({ handle: "ada", onboarded: true, data
 eq("page: saving without a session fails quietly", noSession.code, "no-session");
 eq("page: a missing table reads as null", await cc.Cloud.loadPage(), null);
 
+/* handle availability goes through the SECURITY DEFINER rpc */
+let rpcCall = null;
+const hb = cloudSandboxWith(
+  { supabaseUrl: "https://demo.supabase.co", supabaseAnonKey: "anon-key" },
+  {
+    fetch: async (url, opts) => {
+      rpcCall = { url: url, opts: opts };
+      return { ok: true, status: 200, text: async () => "true" };
+    }
+  }
+);
+const taken = await hb.Cloud.handleTaken("Ravi.Menon");
+ok("handle: rpc answers taken", taken.ok && taken.taken === true);
+ok("handle: hits the rpc", rpcCall.url.indexOf("/rest/v1/rpc/handle_taken") !== -1);
+eq("handle: sends the normalized candidate", JSON.parse(rpcCall.opts.body).candidate, "ravi.menon");
+eq("handle: no token before sign-in", rpcCall.opts.headers.Authorization, undefined);
+
+const hbNo = cloudSandboxWith(
+  { supabaseUrl: "https://demo.supabase.co", supabaseAnonKey: "anon-key" },
+  { fetch: async () => ({ ok: true, status: 200, text: async () => "false" }) }
+);
+const free = await hbNo.Cloud.handleTaken("ravi.menon");
+ok("handle: rpc answers free", free.ok && free.taken === false);
+
+const hbBad = cloudSandboxWith(
+  { supabaseUrl: "https://demo.supabase.co", supabaseAnonKey: "anon-key" },
+  { fetch: async () => ({ ok: true, status: 200, text: async () => "false" }) }
+);
+eq("handle: an invalid name skips the request", (await hbBad.Cloud.handleTaken("../etc")).code, "invalid");
+
+const hbMissing = cloudSandboxWith(
+  { supabaseUrl: "https://demo.supabase.co", supabaseAnonKey: "anon-key" },
+  { fetch: async () => ({ ok: false, status: 404, text: async () => JSON.stringify({ code: "PGRST202", message: "not found" }) }) }
+);
+const noRpc = await hbMissing.Cloud.handleTaken("ravi.menon");
+ok("handle: a missing migration does not block onboarding", !noRpc.ok && noRpc.taken === false && noRpc.code === "unavailable");
+
+const collided = cloudSandboxWith(
+  { supabaseUrl: "https://demo.supabase.co", supabaseAnonKey: "anon-key" },
+  { fetch: async () => ({ ok: false, status: 409, text: async () => JSON.stringify({ code: "23505", message: "duplicate key" }) }) }
+);
+collided.Cloud._internals.writeJSON(collided.Cloud._internals.STORE, {
+  access_token: "t", refresh_token: "r", expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: "u1" }
+});
+const dup = await collided.Cloud.savePage({ handle: "ada", onboarded: true, data: {} });
+eq("page: a duplicate handle is named", dup.code, "handle-taken");
+ok("page: a duplicate handle carries a readable message", /already taken/.test(dup.error));
+
 /* ---- cloud client: sign out ------------------------------------------ */
 cc.Cloud._internals.writeJSON(cc.Cloud._internals.STORE, { access_token: "t", refresh_token: "r", expires_at: 0, user: { id: "u1" } });
 ok("session: stored before sign-out", !!cc.Cloud.session());
