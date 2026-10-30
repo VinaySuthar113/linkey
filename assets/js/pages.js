@@ -1010,9 +1010,18 @@
      ------------------------------------------------------------ */
   function plannerPage() {
     const s = S.state;
-    const days = ["Mon 26", "Tue 27", "Wed 28", "Thu 29", "Fri 30", "Sat 31", "Sun 1"];
     const times = ["09:00", "12:00", "15:00", "18:00"];
-    const slot = (d, t) => s.posts.filter((p) => p.date === "2026-10-" + (26 + d) && p.time.slice(0, 2) === t.slice(0, 2));
+    // The grid is the current week, not a frozen October. A post scheduled
+    // for next Tuesday has to land on next Tuesday's cell.
+    const now = new Date();
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+    const iso = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    const week = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((n, i) => {
+      const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+      return { label: n + " " + d.getDate(), date: iso(d) };
+    });
+    const days = week.map((d) => d.label);
+    const slot = (di, t) => s.posts.filter((p) => p.date === week[di].date && String(p.time || "").slice(0, 2) === t.slice(0, 2));
     let grid = '<div class="week__cell week__head"></div>' + days.map((d) => '<div class="week__cell week__head">' + d + "</div>").join("");
     times.forEach((t, ti) => {
       grid += '<div class="week__cell week__time">' + t + "</div>";
@@ -1031,9 +1040,10 @@
 
     return (
       '<div class="page">' +
-        '<div class="page-head"><div><h1>Social planner</h1><p>Plan once, publish everywhere. This week at a glance.</p></div>' +
+        '<div class="page-head"><div><h1>Social planner</h1><p>Plan your week, then post when you are ready.</p></div>' +
           '<div class="page-head__actions"><button class="btn btn--ghost" data-action="connect-social">' + icon("share", 14) + ' Connect account</button>' +
           '<button class="btn btn--dark" data-action="new-post">' + icon("plus", 14) + " Schedule post</button></div></div>" +
+        '<p class="muted small" style="margin:-6px 0 16px">Posts are saved to your planner. Publishing to a network needs that account connected — not available in the beta yet.</p>' +
         '<div class="card" style="margin-bottom:16px;padding:0;overflow:hidden"><div class="week">' + grid + "</div></div>" +
         '<div class="card"><div class="card__head"><div class="card__title">Upcoming</div><div class="tag">' + s.posts.length + " posts</div></div>" +
           '<table class="table"><thead><tr><th>Post</th><th>Channel</th><th>When</th><th>Status</th></tr></thead><tbody>' + upcoming + "</tbody></table></div>" +
@@ -1059,7 +1069,7 @@
         '<div class="page-head"><div><h1>Auto reply</h1><p>Answer DMs and comments automatically, 24/7.</p></div>' +
           '<div class="page-head__actions"><button class="btn btn--dark" data-action="add-rule">' + icon("plus", 14) + " New rule</button></div></div>" +
         rows +
-        '<div class="empty" style="margin-top:8px">' + icon("message", 20) + "<h3>How it works</h3><p>Pick a trigger (new follower, keyword, story reply) and Linkey sends your reply instantly.</p></div>" +
+        '<div class="empty" style="margin-top:8px">' + icon("message", 20) + "<h3>How it works</h3><p>Pick a trigger (new follower, keyword, story reply). Rules are saved here; delivering replies needs a connected channel, which is not available in the beta yet.</p></div>" +
       "</div>"
     );
   }
@@ -1073,7 +1083,8 @@
 
     return (
       '<div class="page">' +
-        '<div class="page-head"><div><h1>Link shortener</h1><p>Branded short links with click tracking.</p></div></div>' +
+        '<div class="page-head"><div><h1>Link shortener</h1><p>Short links you can keep track of.</p></div></div>' +
+        '<p class="muted small" style="margin:-6px 0 16px">Links are saved to this account. Redirects need a custom domain, which the beta does not resolve yet — until then, use the destination URL itself.</p>' +
         '<div class="card" style="margin-bottom:16px"><div class="card__head"><div class="card__title">Create a short link</div></div>' +
           '<div class="row" style="gap:10px;flex-wrap:wrap">' +
             '<div class="field" style="flex:1;min-width:200px"><label>Destination URL</label><input class="input" id="f-short-target" placeholder="https://…"></div>' +

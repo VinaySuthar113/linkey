@@ -848,7 +848,7 @@
       title: "Schedule post",
       body: '<div class="field"><label>Caption</label><input class="input" id="f-post-title" placeholder="What are you posting?"></div>' +
             '<div class="form-row"><div class="field"><label>Channel</label><select class="select" id="f-post-channel"><option>Instagram</option><option>TikTok</option><option>X</option><option>YouTube</option></select></div>' +
-            '<div class="field"><label>Date</label><input class="input" id="f-post-date" type="date" value="2026-10-29"></div></div>' +
+            '<div class="field"><label>Date</label><input class="input" id="f-post-date" type="date" value="' + S.today() + '"></div></div>' +
             '<div class="field"><label>Time</label><input class="input" id="f-post-time" type="time" value="10:30"></div>',
       foot: '<button class="btn btn--ghost btn--sm" data-action="close-modal">Cancel</button>' +
             '<button class="btn btn--dark btn--sm" data-action="submit-post">Schedule</button>'
@@ -865,7 +865,7 @@
         title: "Schedule from idea",
         body: '<div class="field"><label>Caption</label><input class="input" id="f-post-title" value="' + S.esc(el.dataset.title) + '"></div>' +
               '<div class="form-row"><div class="field"><label>Channel</label><select class="select" id="f-post-channel"><option>Instagram</option><option>TikTok</option><option>X</option></select></div>' +
-              '<div class="field"><label>Date</label><input class="input" id="f-post-date" type="date" value="2026-10-29"></div></div>' +
+              '<div class="field"><label>Date</label><input class="input" id="f-post-date" type="date" value="' + S.today() + '"></div></div>' +
               '<div class="field"><label>Time</label><input class="input" id="f-post-time" type="time" value="10:30"></div>',
         foot: '<button class="btn btn--ghost btn--sm" data-action="close-modal">Cancel</button>' +
               '<button class="btn btn--dark btn--sm" data-action="submit-post">Schedule</button>'

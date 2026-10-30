@@ -877,6 +877,29 @@ ok("profile: a cloud email is read-only", /id="f-user-email"[^>]*readonly/.test(
 D7.state.auth.cloud = false;
 ok("profile: a local email stays editable", !/id="f-user-email"[^>]*readonly/.test(bioSandbox.Pages.PAGES.profile()));
 
+/* The planner grid was pinned to "Mon 26 … Sun 1" of October 2026, so a post
+   scheduled for any other week never appeared where it was scheduled. */
+const todayIso = D7.today();
+D7.state.posts = [
+  { id: "p_today", status: "scheduled", title: "Today post", channel: "Instagram", date: todayIso, time: "09:00" },
+  { id: "p_far", status: "scheduled", title: "Far future", channel: "X", date: "2027-01-01", time: "09:00" }
+];
+const plannerHtml = bioSandbox.Pages.PAGES.planner();
+const gridHtml = plannerHtml.slice(0, plannerHtml.indexOf("Upcoming"));
+ok("planner: a post lands in this week's grid", gridHtml.indexOf("Today post") !== -1);
+ok("planner: a post outside the week stays out of the grid", gridHtml.indexOf("Far future") === -1);
+ok("planner: the upcoming table still lists it", plannerHtml.indexOf("Far future") !== -1);
+const pagesSrcText = fs.readFileSync(path.join(ROOT, "assets/js/pages.js"), "utf8");
+const plannerSrc = (pagesSrcText.match(/function plannerPage\(\)[\s\S]*?\n  \}/) || [""])[0];
+ok("planner: the week is computed, not hardcoded", plannerSrc.indexOf('"2026-10-"') === -1);
+
+/* Each of these tools saves its own data but cannot deliver it yet. Saying so
+   is better than a promise the product cannot keep. */
+ok("planner: publishing is described honestly", /not available in the beta/.test(plannerHtml));
+ok("autoreply: delivery is described honestly", /not available in the beta/.test(bioSandbox.Pages.PAGES.autoreply()));
+ok("shortener: redirects are described honestly", /does not resolve yet/.test(bioSandbox.Pages.PAGES.shortener()));
+D7.state.posts = [];
+
 /* ---- cloud client: unconfigured -------------------------------------- */
 function cloudSandboxWith(config, opts) {
   opts = opts || {};
