@@ -790,8 +790,6 @@
               '<div class="card__head"><div><div class="card__title">Page settings</div><div class="card__sub">How your public page behaves</div></div></div>' +
               '<div class="switch-row"><div><div class="switch-row__title">Hide Linkey branding</div><div class="switch-row__sub">Remove the small footer badge from your page.</div></div>' +
                 '<button class="switch" role="switch" aria-checked="' + (s.settings.hideBranding ? "true" : "false") + '" data-action="toggle-setting" data-key="hideBranding"></button></div>' +
-              '<div class="switch-row"><div><div class="switch-row__title">Collect emails</div><div class="switch-row__sub">Show a signup form under your links.</div></div>' +
-                '<button class="switch" role="switch" aria-checked="' + (s.settings.collectEmails ? "true" : "false") + '" data-action="toggle-setting" data-key="collectEmails"></button></div>' +
             "</div>" +
           "</div>" +
           '<div style="position:sticky;top:0">' + previewPanel({ inline: true }) +
@@ -808,9 +806,25 @@
   function insightPage() {
     const s = S.state;
     const ctr = s.stats.views ? ((s.stats.clicks / s.stats.views) * 100).toFixed(1) : "0.0";
-    // A brand-new page has no history, so growth chips would be invented.
-    const hasHistory = (s.stats.clicks || 0) + (s.stats.views || 0) + s.contacts.length > 0;
-    const delta = (label) => (hasHistory ? label : "");
+    // Growth chips have to come from the numbers on this device. The daily
+    // series holds the last 14 days, so clicks can be compared week on week;
+    // views and contacts cannot be, and get no chip rather than a guess.
+    const daily = s.stats.daily || [];
+    const sum = (a) => a.reduce((x, y) => x + (Number(y) || 0), 0);
+    const thisWeek = sum(daily.slice(-7));
+    const lastWeek = sum(daily.slice(0, 7));
+    const weekDelta = lastWeek > 0
+      ? (function () {
+          const pct = ((thisWeek - lastWeek) / lastWeek) * 100;
+          const n = Math.abs(pct) >= 10 ? Math.round(pct) : Math.round(pct * 10) / 10;
+          return (n > 0 ? "+" : "") + n + "% vs last week";
+        })()
+      : "";
+    const month = S.today().slice(0, 7);
+    const newContacts = s.contacts.filter((c) => String(c.joined || "").slice(0, 7) === month).length;
+    // Nothing in the beta counts a stranger's visit, so an account with no
+    // history gets a plain explanation instead of four zeroes and no context.
+    const hasHistory = (s.stats.clicks || 0) + (s.stats.views || 0) > 0;
     const sources = s.stats.sources.length
       ? s.stats.sources.map((x) =>
           '<div style="margin-bottom:12px">' +
@@ -827,14 +841,16 @@
 
     return (
       '<div class="page">' +
-        '<div class="page-head"><div><h1>Insight</h1><p>Last 14 days · updated a few seconds ago</p></div>' +
-          '<div class="page-head__actions"><button class="btn btn--ghost" data-action="export-csv">' + icon("download", 14) + " Export</button></div></div>" +
+        '<div class="page-head"><div><h1>Insight</h1><p>Last 14 days · saved on this device</p></div>' +
+          '<div class="page-head__actions"><button class="btn btn--ghost" data-action="export-links">' + icon("download", 14) + " Export</button></div></div>" +
+
+        (hasHistory ? "" : '<p class="muted small" style="margin:-6px 0 16px">Visit and click tracking is not switched on in the beta yet, so these numbers stay at zero. The link list below is your page, as published.</p>') +
 
         '<div class="grid grid--4" style="margin-bottom:16px">' +
-          statCard("Page views", S.fmtNum(s.stats.views), delta("12.4% vs last week"), "eye") +
-          statCard("Clicks", S.fmtNum(s.stats.clicks), delta("18.2% vs last week"), "chart") +
-          statCard("Click-through", ctr + "%", delta("2.1% vs last week"), "sparkles") +
-          statCard("Contacts", S.fmtNum(s.contacts.length), delta("4 new"), "users") +
+          statCard("Page views", S.fmtNum(s.stats.views), "", "eye") +
+          statCard("Clicks", S.fmtNum(s.stats.clicks), weekDelta, "chart", !(thisWeek >= lastWeek)) +
+          statCard("Click-through", ctr + "%", "", "sparkles") +
+          statCard("Contacts", S.fmtNum(s.contacts.length), newContacts ? "+" + newContacts + " this month" : "", "users") +
         "</div>" +
 
         '<div class="grid grid--2" style="margin-bottom:16px">' +
@@ -857,6 +873,19 @@
      ------------------------------------------------------------ */
   function audiencePage() {
     const s = S.state;
+    const total = s.contacts.length;
+    const subscribed = s.contacts.filter((c) => c.status === "subscribed").length;
+    // Every number on this page comes from the contacts that exist. The demo
+    // build showed "+4 this month", "75% of list" and a top source named after
+    // a sample link even when the list was empty.
+    const month = S.today().slice(0, 7);
+    const added = s.contacts.filter((c) => String(c.joined || "").slice(0, 7) === month).length;
+    const counts = {};
+    s.contacts.forEach((c) => {
+      const src = String(c.source || "Direct").trim() || "Direct";
+      counts[src] = (counts[src] || 0) + 1;
+    });
+    const top = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || "";
     const rows = s.contacts.map((c) =>
       "<tr><td><div class=\"row\"><span class=\"avatar-sm\">" + esc(S.initials(c.name)) + "</span><div><div class=\"table__title\">" + esc(c.name) + '</div><div class="muted small">' + esc(c.email) + "</div></div></div></td>" +
       "<td>" + esc(c.source) + "</td><td>" + esc(c.joined) + "</td>" +
@@ -871,15 +900,15 @@
           '<button class="btn btn--dark" data-action="add-contact">' + icon("plus", 14) + " Add contact</button></div></div>" +
 
         '<div class="grid grid--3" style="margin-bottom:16px">' +
-          statCard("Total contacts", String(s.contacts.length), "+4 this month", "users") +
-          statCard("Subscribed", String(s.contacts.filter((c) => c.status === "subscribed").length), "75% of list", "checkCircle") +
-          statCard("Top source", "Design tips", "38% of signups", "sparkles") +
+          statCard("Total contacts", String(total), total ? "+" + added + " this month" : "No signups yet", "users") +
+          statCard("Subscribed", String(subscribed), total ? Math.round((subscribed / total) * 100) + "% of list" : "Nothing yet", "checkCircle") +
+          statCard("Top source", top || "—", top ? Math.round((counts[top] / total) * 100) + "% of signups" : "No source yet", "sparkles") +
         "</div>" +
 
         '<div class="card"><div class="card__head"><div class="card__title">Contacts</div>' +
           '<div class="searchbox">' + icon("search", 14) + '<input placeholder="Search contacts" data-action="filter-contacts"></div></div>' +
           (rows ? '<table class="table"><thead><tr><th>Person</th><th>Source</th><th>Joined</th><th>Status</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>"
-                : '<div class="empty">' + icon("users", 20) + "<h3>No contacts yet</h3><p>Add an email form to your page to start collecting.</p></div>") +
+                : '<div class="empty">' + icon("users", 20) + "<h3>No contacts yet</h3><p>Signup forms are not available in the beta yet, so nobody can subscribe from your page. You can add contacts by hand in the meantime.</p></div>") +
         "</div>" +
       "</div>"
     );
@@ -981,7 +1010,7 @@
             (p.status === "live" ? '<span class="pill pill--green">Live</span>' : '<span class="pill">Draft</span>') + "</div>" +
           '<div class="table__title" style="margin-top:10px;font-size:13.5px">' + esc(p.name) + "</div>" +
           '<div class="row row--between" style="margin-top:8px"><span class="muted small">' + S.money(p.price) + "</span><span class=\"muted small\">" + p.sales + " sold</span></div>" +
-          '<div class="row" style="margin-top:12px;gap:6px"><button class="btn btn--ghost btn--sm" data-action="copy-product" data-id="' + p.id + '">' + icon("copy", 13) + " Link</button>" +
+          '<div class="row" style="margin-top:12px;gap:6px"><span style="flex:1"></span>' +
             '<button class="btn btn--soft btn--sm" data-action="edit-product" data-id="' + p.id + '">Edit</button></div>' +
         "</div>" +
       "</div>"
@@ -989,8 +1018,9 @@
 
     return (
       '<div class="page">' +
-        '<div class="page-head"><div><h1>Shop</h1><p>Sell digital products, courses and physical goods right from your page.</p></div>' +
+        '<div class="page-head"><div><h1>Shop</h1><p>Draft digital products, courses and physical goods for your page.</p></div>' +
           '<div class="page-head__actions"><button class="btn btn--dark" data-action="add-product">' + icon("plus", 14) + " New product</button></div></div>" +
+        '<p class="muted small" style="margin:-6px 0 16px">Checkout is not live in the beta. Products are saved on this device only and nothing is charged.</p>' +
         '<div class="grid grid--3" style="margin-bottom:16px">' +
           statCard("Revenue", S.money(totals.revenue), orders ? "+22% this month" : "", "wallet") +
           statCard("Orders", String(orders), orders ? "+12" : "", "cart") +
@@ -998,7 +1028,7 @@
         "</div>" +
         '<div class="grid grid--3">' +
           (cards || '<div class="empty" style="grid-column:1/-1">' + icon("cart", 22) +
-            "<h3>No products yet</h3><p>Add a digital product, course or physical good and it appears on your page.</p>" +
+            "<h3>No products yet</h3><p>Add a product to draft it here. It goes live once checkout exists.</p>" +
             '<button class="btn btn--dark btn--sm" data-action="add-product">New product</button></div>') +
         "</div>" +
       "</div>"
@@ -1099,7 +1129,7 @@
 
   function ideasPage() {
     const ideas = [
-      { t: "Show the messy middle", d: "Post the draft, not just the final. Process content gets 2.3× more saves.", tag: "Carousel" },
+      { t: "Show the messy middle", d: "Post the draft, not just the final. Process content is easy to save and easy to make.", tag: "Carousel" },
       { t: "3 tools I use daily", d: "A quick list post with one line per tool. Easy to film, easy to save.", tag: "Reel" },
       { t: "Answer a real DM", d: "Turn your most-asked question into a 20-second answer.", tag: "Story" },
       { t: "Before / after", d: "Same layout, two type systems. Let the difference do the talking.", tag: "Carousel" },
@@ -1108,8 +1138,7 @@
     ];
     return (
       '<div class="page">' +
-        '<div class="page-head"><div><h1>Post ideas</h1><p>Prompts tuned to what your audience already saves.</p></div>' +
-          '<div class="page-head__actions"><button class="btn btn--ghost" data-action="refresh-ideas">' + icon("sparkles", 14) + " Refresh</button></div></div>" +
+        '<div class="page-head"><div><h1>Post ideas</h1><p>A starter library of prompts — pick one and schedule it.</p></div></div>' +
         '<div class="grid grid--3">' + ideas.map((i) =>
           '<div class="card"><div class="row row--between"><span class="tag">' + esc(i.tag) + "</span>" + icon("bulb", 15) + "</div>" +
           '<div class="table__title" style="margin-top:10px;font-size:13.5px">' + esc(i.t) + "</div>" +
@@ -1199,10 +1228,7 @@
             '<div><button class="btn btn--dark btn--sm" data-action="save-settings">Save changes</button></div>' +
           "</div></div>" +
         '<div class="card"><div class="card__head"><div class="card__title">Preferences</div></div>' +
-          toggle("analytics", "Analytics", "Collect anonymous page views and clicks.") +
-          toggle("collectEmails", "Email capture", "Show a signup form under your links.") +
           toggle("hideBranding", "Hide branding", "Remove the Linkey badge from your page.") +
-          toggle("emailDigest", "Weekly digest", "A Monday email with your numbers.") +
         "</div>" +
         '<div class="card" style="margin-top:16px"><div class="card__head"><div class="card__title">Legal</div></div>' +
           '<div class="list-rows">' +
@@ -1320,7 +1346,7 @@
         '<div class="bio-missing__card">' +
           '<div class="bio-missing__mark">' + brandMark(28) + "</div>" +
           "<h1>@" + esc(shown || "this page") + " hasn’t published here yet</h1>" +
-          "<p>Linkey pages are created in the browser. If this is your page, sign in on the device where you built it.</p>" +
+          "<p>No page is published at this address. If it is yours, sign in and check the username in Settings — or create your page in a minute.</p>" +
           '<div class="bio-missing__actions">' +
             '<a class="btn btn--accent" href="#/signup">Create your page</a>' +
             '<a class="btn btn--ghost" href="#/login">Sign in</a>' +

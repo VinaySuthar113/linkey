@@ -310,9 +310,49 @@
     return "";
   }
 
+  /**
+   * productModal - one form for creating and editing a shop draft.
+   * `p` is the product being edited, or null for a new one.
+   */
+  function productModal(p) {
+    const editing = !!p;
+    const types = ["Digital", "Course", "Physical"];
+    openModal({
+      title: editing ? "Edit product" : "New product",
+      body: '<div class="field"><label>Name</label><input class="input" id="f-product-name" placeholder="Product name" maxlength="80" value="' + S.esc(editing ? p.name : "") + '"></div>' +
+            '<div class="form-row"><div class="field"><label>Price (USD)</label><input class="input" id="f-product-price" type="number" min="0" step="1" value="' + (editing ? (Number(p.price) || 0) : 24) + '"></div>' +
+            '<div class="field"><label>Type</label><select class="select" id="f-product-type">' +
+              types.map((t) => "<option" + (editing && p.type === t ? " selected" : "") + ">" + t + "</option>").join("") +
+            "</select></div></div>",
+      foot: (editing
+          ? '<button class="btn btn--danger btn--sm" data-action="delete-product" data-id="' + p.id + '">' + icon("trash", 14) + " Delete</button>"
+          : "") +
+        "<span style=\"flex:1\"></span>" +
+        '<button class="btn btn--ghost btn--sm" data-action="close-modal">Cancel</button>' +
+        '<button class="btn btn--dark btn--sm" data-action="submit-product"' + (editing ? ' data-id="' + p.id + '"' : "") + ">" +
+        (editing ? "Save" : "Create") + "</button>"
+    });
+  }
+
+  /**
+   * downloadCsv - save rows as a real CSV file in the browser.
+   * `rows` is an array of arrays; the first is the header.
+   */
+  function downloadCsv(filename, rows) {
+    const csv = rows.map((r) => r.map((x) => '"' + String(x == null ? "" : x).replace(/"/g, '""') + '"').join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   const ACTIONS = {
     "close-modal": closeModal,
-
     "account-menu": (el) => {
       const u = S.state.user;
       const r = el.getBoundingClientRect();
@@ -643,10 +683,10 @@
     "open-bio": () => { location.hash = "#/u/" + S.state.user.handle; },
     "growth-tools": () => {
       const tools = [
-        ["planner", "Social planner", "Schedule posts across channels"],
-        ["autoreply", "Auto reply", "Answer DMs automatically"],
-        ["shortener", "Link shortener", "Branded links with tracking"],
-        ["ideas", "Post ideas", "Prompts based on what works"]
+        ["planner", "Social planner", "Draft posts into your week"],
+        ["autoreply", "Auto reply", "Save reply rules for later"],
+        ["shortener", "Link shortener", "Keep a list of short links"],
+        ["ideas", "Post ideas", "A starter library of prompts"]
       ];
       openModal({
         title: "Growth tools",
@@ -657,7 +697,7 @@
     },
     help: () => openModal({
       title: "Help & support",
-      body: '<p class="muted small" style="margin:0">This is a working prototype of the Linkey dashboard. Every link, theme and setting you change is saved locally in your browser.</p>' +
+      body: '<p class="muted small" style="margin:0">Linkey is in beta. Links, themes and settings are saved to your account, and to this browser so the editor opens fast.</p>' +
             '<div class="card" style="padding:12px"><div class="table__title">Quick tips</div><ul class="muted small" style="margin:8px 0 0;padding-left:18px">' +
             "<li>Click <b>Add</b> to create a link — it appears in the phone preview instantly.</li>" +
             "<li>Drag a card, or use the up/down arrows, to reorder.</li>" +
@@ -814,35 +854,52 @@
     },
     "remove-contact": (el) => { S.removeContact(el.dataset.id); refresh(); toast("Contact removed", { icon: "trash" }); },
     "export-csv": () => {
-      const rows = [["name", "email", "source", "joined", "status"]].concat(S.state.contacts.map((c) => [c.name, c.email, c.source, c.joined, c.status]));
-      const csv = rows.map((r) => r.map((x) => '"' + String(x).replace(/"/g, '""') + '"').join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "linkey-contacts.csv";
-      a.click();
-      URL.revokeObjectURL(a.href);
+      downloadCsv("linkey-contacts.csv",
+        [["name", "email", "source", "joined", "status"]]
+          .concat(S.state.contacts.map((c) => [c.name, c.email, c.source, c.joined, c.status])));
       toast("CSV exported", { icon: "download" });
     },
-    "add-product": () => openModal({
-      title: "New product",
-      body: '<div class="field"><label>Name</label><input class="input" id="f-product-name" placeholder="Product name"></div>' +
-            '<div class="form-row"><div class="field"><label>Price (USD)</label><input class="input" id="f-product-price" type="number" min="0" value="24"></div>' +
-            '<div class="field"><label>Type</label><select class="select" id="f-product-type"><option>Digital</option><option>Course</option><option>Physical</option></select></div></div>',
-      foot: '<button class="btn btn--ghost btn--sm" data-action="close-modal">Cancel</button>' +
-            '<button class="btn btn--dark btn--sm" data-action="submit-product">Create</button>'
-    }),
-    "submit-product": () => {
-      const name = val("f-product-name");
+    "export-links": () => {
+      // What the Insight page actually measures: this device's per-link numbers.
+      downloadCsv("linkey-links.csv",
+        [["title", "url", "views", "clicks", "status"]]
+          .concat(S.state.links.map((l) => [l.title, l.url || "", l.views || 0, l.clicks || 0, l.active ? "live" : "off"])));
+      toast("CSV exported", { icon: "download" });
+    },
+    "add-product": () => productModal(null),
+    "edit-product": (el) => {
+      const p = S.state.products.find((x) => x.id === el.dataset.id);
+      if (p) productModal(p);
+    },
+    "submit-product": (el) => {
+      const name = String(val("f-product-name") || "").replace(/\s+/g, " ").trim();
       if (!name) { toast("Name required", { icon: "alert" }); return; }
-      S.state.products.push({ id: S.uid("prd"), name, price: Number(val("f-product-price")) || 0, sales: 0, status: "draft", type: val("f-product-type") || "Digital" });
+      const price = Math.max(0, Number(val("f-product-price")) || 0);
+      const type = val("f-product-type") || "Digital";
+      const existing = el.dataset.id ? S.state.products.find((x) => x.id === el.dataset.id) : null;
+      if (existing) {
+        Object.assign(existing, { name: name.slice(0, 80), price: price, type: type });
+        S.commit(); closeModal(); refresh(); toast("Product saved", { icon: "check" });
+        return;
+      }
+      S.state.products.push({ id: S.uid("prd"), name: name.slice(0, 80), price: price, sales: 0, status: "draft", type: type });
       S.commit(); closeModal(); refresh(); toast("Product created", { icon: "cart" });
     },
-    "copy-product": (el) => {
+    "delete-product": (el) => {
       const p = S.state.products.find((x) => x.id === el.dataset.id);
-      if (p) copy("https://linkey.app/shop/" + p.name.toLowerCase().replace(/\s+/g, "-"), "Product link copied");
+      if (!p) return;
+      openModal({
+        title: "Delete this product?",
+        body: '<p class="muted" style="margin:0">“' + S.esc(p.name) + '” will be removed from this shop draft for good.</p>',
+        foot: '<button class="btn btn--ghost btn--sm" data-action="close-modal">Keep it</button>' +
+              '<span style="flex:1"></span>' +
+              '<button class="btn btn--danger btn--sm" data-action="confirm-delete-product" data-id="' + p.id + '">' + icon("trash", 14) + " Delete</button>"
+      });
     },
-    "edit-product": () => toast("Product editor — next milestone", { icon: "pencil" }),
+    "confirm-delete-product": (el) => {
+      S.state.products = S.state.products.filter((x) => x.id !== el.dataset.id);
+      S.commit(); closeModal(); refresh(); toast("Product deleted", { icon: "trash" });
+    },
 
     "new-post": () => openModal({
       title: "Schedule post",
@@ -871,7 +928,6 @@
               '<button class="btn btn--dark btn--sm" data-action="submit-post">Schedule</button>'
       });
     },
-    "refresh-ideas": () => toast("Fresh ideas generated", { icon: "sparkles", accent: true }),
 
     "add-rule": () => openModal({
       title: "New auto reply",

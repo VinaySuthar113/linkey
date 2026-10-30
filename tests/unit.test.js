@@ -52,6 +52,20 @@ ok("addpop: a click inside the dialog does not close it", /e\.target === backdro
 const closestList = (addpopSrc.match(/e\.target\.closest\("([^"]+)"\)/) || [])[1] || "";
 ok("addpop: the backdrop is no longer resolved with closest()", !!closestList && closestList.indexOf("overlay") === -1);
 
+/* Form tiles had no endpoint behind them: the visitor filled in a form that
+   went nowhere. The picker says so up front and the save path refuses it. */
+const selectBlock = (addpopSrc.match(/function selectProvider\(id, prefillUrl\)[\s\S]*?\n  \}/) || [""])[0];
+ok("addpop: choosing a form says it is unavailable", /kind \|\| "link"\) === "form"/.test(selectBlock) && /not available in the beta/.test(selectBlock));
+ok("addpop: choosing a form does not open the details step", /kind \|\| "link"\) === "form"[\s\S]{0,300}?return;[\s\S]{0,40}?step = "details"/.test(selectBlock));
+const saveBlock = (addpopSrc.match(/function save\(\)[\s\S]*?\n  \}/) || [""])[0];
+ok("addpop: saving a form is refused", /kind === "form"/.test(saveBlock) && /not available in the beta/.test(saveBlock));
+ok("addpop: a refused form is not added", saveBlock.indexOf("addLink") > saveBlock.indexOf("kind === \"form\""));
+
+const provSrc = fs.readFileSync(path.join(ROOT, "assets/js/providers.js"), "utf8");
+const formRows = provSrc.split("\n").filter((l) => l.indexOf('", "form", ') !== -1);
+eq("picker: every form row is marked unavailable", formRows.filter((l) => l.indexOf("Not available in the beta.") !== -1).length, formRows.length);
+ok("picker: the form rows were found", formRows.length >= 15);
+
 /* Deleting an account has to delete the published row, not just the copy in
    this browser — otherwise the page stays live and the owner can never take
    it down. The RLS owner-delete policy already allows it. */
@@ -86,6 +100,14 @@ ok("profile: an invalid handle is refused", /S\.handleIssue\(next, S\.state\.use
 ok("profile: a taken cloud handle is refused", /check\.taken\) return "That username is taken/.test(appSrc));
 ok("profile: save-user goes through the check", /"save-user": async[\s\S]{0,900}saveIdentity/.test(appSrc));
 ok("profile: save-profile goes through the check", /"save-profile": async[\s\S]{0,400}saveIdentity/.test(appSrc));
+
+/* Shop: "Edit" used to be a toast and products had no way to be changed or
+   removed. It is a real editor now, with a confirmation on delete. */
+ok("shop: edit opens the product form", /"edit-product": \(el\)[\s\S]{0,220}productModal\(p\)/.test(appSrc));
+ok("shop: the form handles both create and edit", /"submit-product": \(el\)[\s\S]{0,900}existing/.test(appSrc));
+ok("shop: deleting a product asks first", /Delete this product\?/.test(appSrc) && /confirm-delete-product/.test(appSrc));
+ok("shop: the dead product link is gone", appSrc.indexOf("Product link copied") === -1);
+ok("shop: the dead editor toast is gone", appSrc.indexOf("Product editor - next milestone") === -1);
 
 /* ---- data integrity -------------------------------------------------- */
 ok("PICKER exists", !!D);
@@ -898,6 +920,78 @@ ok("planner: the week is computed, not hardcoded", plannerSrc.indexOf('"2026-10-
 ok("planner: publishing is described honestly", /not available in the beta/.test(plannerHtml));
 ok("autoreply: delivery is described honestly", /not available in the beta/.test(bioSandbox.Pages.PAGES.autoreply()));
 ok("shortener: redirects are described honestly", /does not resolve yet/.test(bioSandbox.Pages.PAGES.shortener()));
+const ideasHtml = bioSandbox.Pages.PAGES.ideas();
+ok("ideas: no dead refresh control", ideasHtml.indexOf('data-action="refresh-ideas"') === -1);
+ok("ideas: no invented engagement stat", ideasHtml.indexOf("2.3") === -1);
+ok("ideas: the list is labelled as prompts", /starter library of prompts/.test(ideasHtml));
+ok("ideas: an idea can be scheduled", ideasHtml.indexOf('data-action="use-idea"') !== -1);
+
+/* Audience showed "+4 this month", "75% of list" and a top source named after
+   a demo link even with no contacts. Every figure must come from the list. */
+D7.state.contacts = [];
+const audEmpty = bioSandbox.Pages.PAGES.audience();
+ok("audience: no invented monthly signups", audEmpty.indexOf("+4 this month") === -1);
+ok("audience: no invented subscriber share", audEmpty.indexOf("75% of list") === -1);
+ok("audience: no invented top source", audEmpty.indexOf("38% of signups") === -1);
+ok("audience: the empty state does not promise a page form", audEmpty.indexOf("Add an email form to your page") === -1);
+ok("audience: the empty state says forms are not live", /not available in the beta/.test(audEmpty));
+
+/* Email capture had a switch in two places and rendered nothing. A switch
+   that does nothing is worse than no switch. */
+const customHtml = bioSandbox.Pages.PAGES.customize();
+const settingsHtml = bioSandbox.Pages.PAGES.settings();
+ok("customize: no dead collect-emails switch", customHtml.indexOf('data-key="collectEmails"') === -1);
+ok("settings: no dead email-capture toggle", settingsHtml.indexOf('data-key="collectEmails"') === -1);
+ok("settings: the real switches are still there", settingsHtml.indexOf('data-key="hideBranding"') !== -1);
+ok("store: the retired setting is gone from the defaults", !("collectEmails" in D7.state.settings));
+ok("store: the dead analytics switch is gone", !("analytics" in D7.state.settings));
+ok("store: the dead digest switch is gone", !("emailDigest" in D7.state.settings));
+ok("settings: no dead analytics toggle", settingsHtml.indexOf('data-key="analytics"') === -1);
+ok("settings: no dead digest toggle", settingsHtml.indexOf('data-key="emailDigest"') === -1);
+
+/* Insight printed fixed growth chips ("12.4% vs last week", "4 new") for every
+   account, whatever the numbers were. They come from the 14-day series now. */
+D7.state.contacts = [];
+D7.state.stats.views = 100;
+D7.state.stats.clicks = 70;
+D7.state.stats.daily = [10, 10, 10, 10, 10, 10, 10, 5, 5, 5, 5, 5, 5, 5];
+const ins = bioSandbox.Pages.PAGES.insight();
+ok("insight: no invented view growth", ins.indexOf("12.4%") === -1);
+ok("insight: no invented click growth", ins.indexOf("18.2%") === -1);
+ok("insight: no invented contact growth", ins.indexOf("4 new") === -1);
+ok("insight: clicks compare the two real weeks", ins.indexOf("-50% vs last week") !== -1);
+ok("insight: the subtitle does not claim live updates", ins.indexOf("updated a few seconds ago") === -1);
+ok("insight: export uses the link export", ins.indexOf('data-action="export-links"') !== -1);
+D7.state.stats.daily = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+D7.state.stats.views = 0;
+D7.state.stats.clicks = 0;
+const insCold = bioSandbox.Pages.PAGES.insight();
+ok("insight: a cold account gets no growth chip", insCold.indexOf("% vs last week") === -1);
+ok("insight: a cold account is told tracking is off", /tracking is not switched on/.test(insCold));
+ok("insight: a page with history is not told that", !/tracking is not switched on/.test(ins));
+D7.state.stats.views = 0;
+D7.state.stats.clicks = 0;
+ok("insight: export-links is defined", /"export-links":/.test(appSrc));
+ok("insight: export-links writes the link rows", /"export-links"[\s\S]{0,400}S\.state\.links/.test(appSrc));
+ok("insight: both exports share one CSV writer", /function downloadCsv/.test(appSrc));
+
+/* The legal page is public. A bracketed placeholder or a "local-first, nothing
+   leaves your browser" claim would be wrong now that pages sync to Supabase. */
+const legalSrc = fs.readFileSync(path.join(ROOT, "legal.html"), "utf8");
+ok("legal: no bracketed placeholders are left", !/\[[A-Z][^\]]*\]/.test(legalSrc));
+ok("legal: there is a real contact address", legalSrc.indexOf("vinaysuthar113@gmail.com") !== -1);
+ok("legal: the privacy section admits the server copy", /also stored in our database/.test(legalSrc));
+ok("legal: it no longer claims nothing is transmitted", legalSrc.indexOf("not transmitted to a server") === -1);
+ok("legal: deletion points at the real control", legalSrc.indexOf("[PRIVACY EMAIL]") === -1 && /Delete account/.test(legalSrc));
+D7.state.contacts = [
+  { id: "c1", name: "Ada", email: "a@x.co", source: "Instagram", joined: D7.today(), status: "subscribed" },
+  { id: "c2", name: "Ben", email: "b@x.co", source: "Instagram", joined: "2025-01-01", status: "unsubscribed" }
+];
+const aud = bioSandbox.Pages.PAGES.audience();
+ok("audience: the top source comes from real contacts", aud.indexOf("100% of signups") !== -1);
+ok("audience: the subscriber share is computed", aud.indexOf("50% of list") !== -1);
+ok("audience: this month counts only this month", aud.indexOf("+1 this month") !== -1);
+D7.state.contacts = [];
 D7.state.posts = [];
 
 /* ---- cloud client: unconfigured -------------------------------------- */
@@ -1552,6 +1646,7 @@ const missingHtml = RP.missingBioPage('<script>alert(1)</script>');
 ok("missing: the handle is stripped of markup", missingHtml.indexOf("<script>") === -1);
 ok("missing: there is a way to create a page", missingHtml.indexOf("#/signup") !== -1);
 ok("missing: it is not a bio page with someone's links", missingHtml.indexOf("bio-page__links") === -1);
+ok("missing: it does not claim pages live only on one device", missingHtml.indexOf("device where you built it") === -1);
 ok("loading: a quiet placeholder", RP.loadingBioPage().indexOf("Loading page") !== -1);
 eq("render: a missing page wins over the demo account", RP.render("bio", { missing: "ghost" }).indexOf("ghost") !== -1, true);
 eq("render: own page when there is no context", RP.render("bio").indexOf("bio-page__links") !== -1, true);

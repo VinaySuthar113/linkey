@@ -228,6 +228,13 @@
     } else {
       chosen = Object.assign({}, D.byId[id] || { id: "link", name: "Link", kind: "link" }, { prefill: prefillUrl || "" });
     }
+    // A form tile needs somewhere to store a signup. The beta has no endpoint,
+    // so opening its details step would end in a button that does nothing.
+    // Say it here, at the moment the choice is made.
+    if ((chosen.kind || "link") === "form") {
+      global.toast && global.toast("Forms are not available in the beta yet — they need a server to store signups.", { icon: "alert" });
+      return;
+    }
     step = "details";
     render();
   }
@@ -238,6 +245,14 @@
     const isBlock = kind === "text" || kind === "header";
     const title = String((root.querySelector("#addpop-title") || {}).value || p.name).trim();
     const body = String((root.querySelector("#addpop-body") || {}).value || "").trim();
+
+    // A form tile needs somewhere to store a signup. There is no endpoint in
+    // the beta, so creating one would put a button on the page that silently
+    // does nothing. Refuse it and say why.
+    if (kind === "form") {
+      global.toast && global.toast("Forms are not available in the beta yet — they need a server to store signups.", { icon: "alert" });
+      return;
+    }
 
     if (isBlock) {
       if (body.length < 2) { global.toast && global.toast("Add some text first.", { icon: "alert" }); return; }
@@ -312,8 +327,10 @@
     if (el.dataset.tile) {
       const t = el.dataset.tile;
       if (t === "collection") { close(); if (global.ACTIONS && global.ACTIONS["add-collection"]) global.ACTIONS["add-collection"](); return; }
-      const map = { link: { id: "link", name: "Link", kind: "link" }, product: { id: "product", name: "Product", kind: "product" }, form: { id: "form", name: "Form", kind: "form" } };
-      chosen = Object.assign({}, map[t]); step = "details"; render(); return;
+      // Through selectProvider so the tile obeys the same rules as a row —
+      // including the form refusal.
+      selectProvider(t);
+      return;
     }
     if (el.dataset.pick) { selectProvider(el.dataset.pick); return; }
   }

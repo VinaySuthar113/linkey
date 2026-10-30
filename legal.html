@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Linkey — Legal</title>
 <meta name="description" content="Linkey terms of service, privacy policy, acceptable use, trademark notice and copyright policy." />
-<link rel="stylesheet" href="assets/css/app.css?v=2026.10.30-2" />
+<link rel="stylesheet" href="assets/css/app.css?v=2026.10.30-3" />
 <style>
   .legal { max-width: 760px; margin: 0 auto; padding: 56px 24px 96px; }
   .legal h1 { font-size: 34px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 8px; }
@@ -59,20 +59,21 @@
   </nav>
 
   <div class="note">
-    <strong>Template notice.</strong> This page is a working draft prepared alongside the product. Before you launch
-    publicly, replace every <code>[bracketed]</code> placeholder with your legal entity, address, jurisdiction and
-    contact details, and have a qualified lawyer in your jurisdiction review it. Nothing here is legal advice.
+    <strong>Beta notice.</strong> This page describes Linkey as it ships today. It is written for an independent beta
+    with no company, billing or paid plans behind it yet; add your legal entity, address and governing law before you
+    start charging money. Nothing here is legal advice.
   </div>
 
   <section id="terms">
     <h2>Terms of service</h2>
     <h3>1. Who we are</h3>
-    <p>Linkey is operated by <strong>[LEGAL ENTITY NAME]</strong>, registered at <strong>[ADDRESS]</strong>
-      (“Linkey”, “we”, “us”). You can reach us at <strong>[CONTACT EMAIL]</strong>.</p>
+    <p>Linkey is an independent beta service, run by its developer. You can reach us at
+      <strong>vinaysuthar113@gmail.com</strong>.</p>
 
     <h3>2. The service</h3>
-    <p>Linkey lets you build a public page that collects links, products, forms and other blocks, and publish it at a
-      single URL. Some features are demonstrations that store data only in your browser.</p>
+    <p>Linkey lets you build a public page that collects links, products and other blocks, and publish it at a single
+      URL. Linkey is in beta: the shop, planner, auto reply and short-link tools save data on your device and do not
+      deliver or charge anything yet.</p>
 
     <h3>3. Your account and your content</h3>
     <ul>
@@ -91,8 +92,8 @@
       plans. The service is provided on an “as available” basis.</p>
 
     <h3>6. Paid plans, billing and refunds</h3>
-    <p>Paid features, prices, billing periods and refund terms are set out at checkout. Taxes are charged where
-      required. <strong>[Add your billing, renewal and cancellation terms.]</strong></p>
+    <p>Linkey is free during the beta and takes no payments. If paid features are introduced, prices, billing periods,
+      renewal and cancellation terms will be shown before you pay anything.</p>
 
     <h3>7. Suspension and termination</h3>
     <p>We may suspend or remove a page that breaks these terms, infringes rights, or creates a security or legal risk.
@@ -100,12 +101,12 @@
 
     <h3>8. Disclaimers and liability</h3>
     <p>To the extent permitted by law, the service is provided without warranties, and our aggregate liability is
-      limited to the amount you paid us in the twelve months before the claim.
-      <strong>[Confirm the limits allowed in your jurisdiction — some consumer rights cannot be excluded.]</strong></p>
+      limited to the amount you paid us in the twelve months before the claim. Some consumer rights cannot be excluded
+      or limited by law, and nothing in these terms affects those rights.</p>
 
     <h3>9. Governing law</h3>
-    <p>These terms are governed by the laws of <strong>[JURISDICTION]</strong>, and disputes will be heard by the courts
-      of <strong>[VENUE]</strong>.</p>
+    <p>These terms are governed by the law that applies where the operator is established. If a dispute cannot be
+      settled with us directly, it will be heard by the courts that have jurisdiction there.</p>
 
     <h3>10. Changes to these terms</h3>
     <p>We will update the date above when these terms change, and give notice of material changes.</p>
@@ -113,10 +114,11 @@
 
   <section id="privacy">
     <h2>Privacy policy</h2>
-    <h3>What this build stores</h3>
-    <p>This build is local-first. Your profile, links, themes, contacts and settings are stored in your own browser
-      using <code>localStorage</code> under the key <code>linkey.state.v1</code>. They are not transmitted to a server
-      by the app itself.</p>
+    <h3>What we store</h3>
+    <p>When you build a page, your profile, links, theme and page settings are saved in your browser
+      (<code>localStorage</code> key <code>linkey.state.v1</code>). If you sign in with Google, the published version of
+      that page is also stored in our database so it can be served at its public URL. Contacts, products, scheduled
+      posts, auto-reply rules and short links are kept on this device only.</p>
 
     <h3>Public pages</h3>
     <p>A published page is readable by anyone with its URL. Treat everything on it as public. Links you publish are
@@ -127,21 +129,22 @@
       analytics, advertising or tracking scripts, and does not set advertising cookies.</p>
 
     <h3>Cookies and local storage</h3>
-    <p>We use local storage for functionality (keeping you signed in to your own data and remembering preferences).
-      Clearing site data removes it. <strong>[If you add analytics or embedded third parties, add a cookie banner and
-      a cookie table here.]</strong></p>
+    <p>We use local storage for functionality: keeping you signed in, remembering preferences, and caching your page so
+      the editor opens quickly. Sign-in is handled by Google and our authentication provider, which set the session
+      token stored in this browser. Clearing site data removes it.</p>
 
     <h3>Your rights</h3>
     <p>Depending on where you live, you may have rights to access, correct, export, delete or restrict processing of
-      your personal data, and to object to certain processing. Contact <strong>[PRIVACY EMAIL]</strong> to exercise
-      them. You can delete everything stored by this build with <em>Settings → Delete account data</em>.</p>
+      your personal data, and to object to certain processing. Contact <strong>vinaysuthar113@gmail.com</strong> to
+      exercise them. You can delete your page and its database row with <em>Profile → Delete account</em>.</p>
 
     <h3>Retention and international transfers</h3>
-    <p>Local data stays until you clear it. <strong>[Describe server retention, sub-processors and transfer
-      safeguards once a backend is connected.]</strong></p>
+    <p>Your published page stays in our database until you delete it from your profile; deleting your account removes
+      it. Local data stays until you clear it. Our sign-in and database provider is Supabase, and Google handles the
+      sign-in step; both process data outside your country.</p>
 
     <h3>Children</h3>
-    <p>Linkey is not directed at children under <strong>[13/16]</strong>, and we do not knowingly collect their data.</p>
+    <p>Linkey is not directed at children under <strong>16</strong>, and we do not knowingly collect their data.</p>
   </section>
 
   <section id="use">
@@ -167,14 +170,14 @@
       Discord, WhatsApp, Slack, Shopify or any other platform whose name or logo appears in the link picker.</p>
     <p>All third-party names and logos are the trademarks of their respective owners. They are used only to identify
       the service that a link points to — a descriptive, nominative use. Their use does not imply any partnership.</p>
-    <p>If you own a mark and want a logo removed from the picker, email <strong>[CONTACT EMAIL]</strong> and we will
+    <p>If you own a mark and want a logo removed from the picker, email <strong>vinaysuthar113@gmail.com</strong> and we will
       remove it promptly. See <a href="#licences">licences</a> for asset provenance.</p>
   </section>
 
   <section id="dmca">
     <h2>Copyright and takedown</h2>
     <p>If you believe content hosted on a Linkey page infringes your copyright, send a notice to
-      <strong>[DMCA EMAIL]</strong> including:</p>
+      <strong>vinaysuthar113@gmail.com</strong> including:</p>
     <ul>
       <li>your name, address, telephone number and email;</li>
       <li>identification of the copyrighted work and the exact URL of the allegedly infringing material;</li>
@@ -200,7 +203,7 @@
   </section>
 
   <footer>
-    <p>© 2026 <strong>[LEGAL ENTITY NAME]</strong>. All rights reserved. Linkey is an independent product and is not
+    <p>© 2026 Linkey. All rights reserved. Linkey is an independent product and is not
       affiliated with any social platform.</p>
   </footer>
 </main>

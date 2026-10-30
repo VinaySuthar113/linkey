@@ -732,10 +732,7 @@
         seoTitle: "Username_01 — links",
         seoDescription: "All my work, in one place.",
         viewMode: "list",
-        analytics: true,
-        collectEmails: true,
-        hideBranding: false,
-        emailDigest: true
+        hideBranding: false
       },
       stats: {
         clicks: 1240, views: 8420, contacts: 4, revenue: 486,
