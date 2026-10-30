@@ -476,6 +476,29 @@
    * migration never blocks onboarding; the unique index is still the
    * backstop.
    */
+  /**
+   * deletePage - remove this account's published row.
+   *
+   * The owner delete policy allows it. The Supabase Auth user itself
+   * survives, so signing in again starts a fresh, empty page rather than
+   * resurrecting the deleted one.
+   */
+  async function deletePage() {
+    if (!configured) return { ok: false, code: "unconfigured" };
+    const token = await accessToken();
+    if (!token) return { ok: false, code: "no-session" };
+    const u = user();
+    if (!u || !u.id) return { ok: false, code: "no-user" };
+    const r = await request("/rest/v1/pages", {
+      method: "DELETE",
+      token: token,
+      headers: { Prefer: "return=minimal" },
+      query: { user_id: "eq." + u.id }
+    });
+    if (r.ok) return { ok: true };
+    return r;
+  }
+
   async function handleTaken(handle) {
     if (!configured) return { ok: true, taken: false, code: "unconfigured" };
     const h = String(handle || "").trim().toLowerCase();
@@ -705,7 +728,7 @@
     ready, session, user, refresh, normalizeUser, isFresh, isExpired,
     signInWithOAuth, sendEmailLink, signOut,
     completeRedirect, parseRedirect, hasAuthParams, stripAuthParams, redirectTo, authorizeUrl,
-    loadPage, savePage, loadPublicPage, handleTaken,
+    loadPage, savePage, loadPublicPage, handleTaken, deletePage,
     googleConfigured, signInWithGoogle, mode, verifyGoogleProfile,
     // Exposed for tests only; not part of the app surface.
     _internals: { base64url, challengeFor, randomToken, urlAllowed, basePath, readJSON, writeJSON, STORE, VERIFIER, GCLIENT, USERINFO }

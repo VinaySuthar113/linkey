@@ -42,18 +42,23 @@
     const view = ctx && ctx.view;
     const u = view ? { name: view.name, avatar: view.avatar } : S.state.user;
     const p = view ? { title: view.name, bio: view.bio } : S.state.profile;
+    const settings = view ? { seoTitle: view.seoTitle, seoDescription: view.seoDescription } : S.state.settings;
+    // Settings → SEO title/description win when they are filled in; the
+    // name and bio are the fallback so a share card is never blank.
+    const seoTitle = String((settings && settings.seoTitle) || "").trim() || p.title;
+    const seoDesc = String((settings && settings.seoDescription) || "").trim() || p.bio;
     const url = P.publicLink(handle || (view ? view.handle : ""));
-    document.title = p.title + " — Linkey";
-    setMeta("name", "description", p.bio);
+    document.title = seoTitle + " — Linkey";
+    setMeta("name", "description", seoDesc);
     setMeta("property", "og:type", "profile");
-    setMeta("property", "og:title", p.title);
-    setMeta("property", "og:description", p.bio);
+    setMeta("property", "og:title", seoTitle);
+    setMeta("property", "og:description", seoDesc);
     setMeta("property", "og:url", url);
     setMeta("property", "og:site_name", "Linkey");
     if (u.avatar) setMeta("property", "og:image", u.avatar);
     setMeta("name", "twitter:card", "summary");
-    setMeta("name", "twitter:title", p.title);
-    setMeta("name", "twitter:description", p.bio);
+    setMeta("name", "twitter:title", seoTitle);
+    setMeta("name", "twitter:description", seoDesc);
   }
 
   /* ---------------- routing ---------------- */
@@ -277,6 +282,34 @@
 
 
   /* ---------------- actions ---------------- */
+
+  /**
+   * saveIdentity - change the public username with the same checks as signup.
+   *
+   * The username is the public URL, so a typo is expensive: it must be
+   * normalised, must not be reserved or malformed, and must not already be
+   * published by another account. Returns "" when saved, otherwise the
+   * sentence to show the owner.
+   */
+  async function saveIdentity(rawHandle, patch) {
+    const next = S.normalizeHandle(rawHandle);
+    if (!next) return "Pick a username.";
+    const issue = S.handleIssue(next, S.state.user.handle);
+    if (issue) return issue;
+
+    const a = S.auth();
+    if (next !== S.state.user.handle && a.cloud && Cloud && Cloud.isConfigured() && Cloud.handleTaken) {
+      let check = null;
+      try { check = await Cloud.handleTaken(next); } catch (e) { check = null; }
+      // A failed check is not proof the handle is free, but refusing to save
+      // because the network blinked would trap the owner. The write itself is
+      // still guarded by pages_handle_key.
+      if (check && check.ok && check.taken) return "That username is taken. Try another.";
+    }
+    S.updateUser(Object.assign({}, patch, { handle: next }));
+    return "";
+  }
+
   const ACTIONS = {
     "close-modal": closeModal,
 
@@ -387,6 +420,20 @@
       closeModal(); refresh(); toast("Saved", { icon: "check" });
     },
     "delete-link": (el) => {
+      // Deleting is permanent and there is no server copy of a link, so a
+      // stray tap must not be enough. Hiding stays the one-tap option.
+      const l = S.state.links.find((x) => x.id === el.dataset.id);
+      if (!l) return;
+      openModal({
+        title: "Delete this link?",
+        body: '<p class="muted" style="margin:0 0 6px">“' + S.esc(l.title) + '” will be removed from your page for good. This cannot be undone.</p>' +
+          '<p class="muted small" style="margin:0">Only want it off the page for now? Use “Visible on my page” instead — hidden links wait in the archive.</p>',
+        foot: '<button class="btn btn--ghost btn--sm" data-action="close-modal">Keep it</button>' +
+          '<span style="flex:1"></span>' +
+          '<button class="btn btn--danger btn--sm" data-action="confirm-delete-link" data-id="' + l.id + '">' + icon("trash", 14) + " Delete</button>"
+      });
+    },
+    "confirm-delete-link": (el) => {
       S.deleteLink(el.dataset.id);
       closeModal(); refresh(); toast("Link deleted", { icon: "trash" });
     },
@@ -558,13 +605,24 @@
       el.classList.toggle("btn--dark", now);
       el.classList.toggle("btn--ghost", !now);
     },
-    "save-profile": () => {
+    "save-profile": async () => {
+      const handleField = val("f-profile-handle");
+      if (handleField) {
+        const err = await saveIdentity(handleField, {});
+        if (err) return toast(err, { icon: "alert" });
+      }
       S.updateProfile({ title: val("f-profile-title") || S.state.user.name, bio: val("f-profile-bio") });
-      if (val("f-profile-handle")) S.updateUser({ handle: val("f-profile-handle").replace(/^@/, "") });
       refresh(); toast("Profile saved", { icon: "check" });
     },
-    "save-user": () => {
-      S.updateUser({ name: val("f-user-name"), handle: val("f-user-handle").replace(/^@/, ""), email: val("f-user-email"), tagline: val("f-user-tagline") });
+    "save-user": async () => {
+      const name = String(val("f-user-name") || "").replace(/\s+/g, " ").trim();
+      if (name.length < 2) return toast("Add your name", { icon: "alert" });
+      const a = S.auth();
+      // A Google account's address belongs to Google, not to this form, so
+      // it is shown read-only and never overwritten by typing.
+      const email = a.cloud ? (a.email || S.state.user.email) : String(val("f-user-email") || "").trim();
+      const err = await saveIdentity(val("f-user-handle"), { name: name, email: email, tagline: val("f-user-tagline") });
+      if (err) return toast(err, { icon: "alert" });
       refresh(); toast("Details saved", { icon: "check" });
     },
     "save-settings": () => {
@@ -844,17 +902,42 @@
     "mark-read": () => { S.markNotificationsRead(); refresh(); toast("All caught up", { icon: "check" }); },
     payout: () => toast("Payouts need Stripe Connect onboarding", { icon: "card" }),
     "payout-settings": () => toast("Payout settings — demo", { icon: "settings" }),
-    "manage-plan": () => toast("Plan management — demo", { icon: "card" }),
-    "manage-billing": () => toast("Billing portal — demo", { icon: "card" }),
-    invite: () => toast("Invite link copied", { icon: "users" }),
-    mfa: () => toast("MFA setup — demo", { icon: "shield" }),
     "delete-account": () => openModal({
-      title: "Delete account?",
-      body: '<p class="muted small" style="margin:0">This is a prototype, so this only clears your local data and restores the demo content.</p>',
-      foot: '<button class="btn btn--ghost btn--sm" data-action="close-modal">Cancel</button>' +
-            '<button class="btn btn--danger btn--sm" data-action="confirm-delete">Delete everything</button>'
+      title: "Delete your Linkey page?",
+      body: '<p class="muted" style="margin:0 0 8px">This deletes your public page, every link, and the copy saved on this device. It cannot be undone, and the username is freed for someone else.</p>' +
+        '<p class="muted small" style="margin:0">' +
+        (S.auth().cloud
+          ? "Your Google account is not deleted — you can create a fresh page with the same address later."
+          : "You can create a new account with the same email later.") +
+        "</p>",
+      foot: '<button class="btn btn--ghost btn--sm" data-action="close-modal">Keep my page</button>' +
+            '<span style="flex:1"></span>' +
+            '<button class="btn btn--danger btn--sm" data-action="confirm-delete">' + icon("trash", 14) + " Delete everything</button>"
     }),
-    "confirm-delete": () => { S.reset(); closeModal(); location.hash = "#/links"; refresh(); toast("Local data reset", { icon: "trash" }); },
+    "confirm-delete": async (el) => {
+      const a = S.auth();
+      const cloud = !!(a.cloud && Cloud && Cloud.isConfigured());
+      if (cloud) {
+        el.disabled = true;
+        el.textContent = "Deleting…";
+        let gone = null;
+        try { gone = await Cloud.deletePage(); } catch (e) { gone = null; }
+        if (!gone || !gone.ok) {
+          // Never wipe the device while the published page still exists:
+          // the owner would lose the only copy they can edit.
+          el.disabled = false;
+          el.textContent = "Delete everything";
+          return toast("Could not delete your page. Check your connection and try again.", { icon: "alert" });
+        }
+        try { await Cloud.signOut(); } catch (e) { /* local state still clears */ }
+      }
+      S.clearAccount();
+      S.signOut();
+      closeModal();
+      location.hash = "#/signup";
+      refresh();
+      toast(cloud ? "Page deleted" : "Local data reset", { icon: "trash" });
+    },
     toast: (el) => toast(el.dataset.msg || "Done", { icon: "check" })
   };
 

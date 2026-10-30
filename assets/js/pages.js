@@ -1122,38 +1122,40 @@
           '<div class="card__head"><div class="card__title">My information</div></div>' +
           '<div class="form-stack">' +
             '<div class="field"><label>Name</label><input class="input" id="f-user-name" value="' + esc(s.user.name) + '"></div>' +
-            '<div class="field"><label>Username</label><input class="input" id="f-user-handle" value="' + esc(s.user.handle) + '"></div>' +
-            '<div class="field"><label>Email</label><input class="input" id="f-user-email" value="' + esc(s.user.email) + '"></div>' +
+            '<div class="field"><label>Username</label><input class="input" id="f-user-handle" value="' + esc(s.user.handle) + '">' +
+              (s.user.handle ? '<div class="muted small" style="margin-top:4px">Your page lives at ' + esc(publicLink(s.user.handle)) + "</div>" : "") +
+            "</div>" +
+            '<div class="field"><label>Email</label><input class="input" id="f-user-email" value="' + esc(s.user.email) + '"' +
+              (s.auth && s.auth.cloud ? " readonly" : "") + ">" +
+              (s.auth && s.auth.cloud ? '<div class="muted small" style="margin-top:4px">This is the address you signed in with.</div>' : "") + "</div>" +
             '<div class="field"><label>Tagline</label><input class="input" id="f-user-tagline" value="' + esc(s.user.tagline) + '"></div>' +
             '<div><button class="btn btn--dark btn--sm" data-action="save-user">Save details</button></div>' +
           "</div>" +
         "</div>" +
 
         '<div class="card" style="margin-bottom:16px">' +
-          '<div class="card__head"><div class="card__title">Account management</div></div>' +
-          '<div class="switch-row"><div><div class="switch-row__title">' + esc(s.user.handle) + '</div><div class="switch-row__sub">' + esc(s.user.email) + "</div></div>" +
-            '<span class="pill pill--accent">Pro</span></div>' +
-          '<div class="switch-row"><div><div class="switch-row__title">Subscription plan</div><div class="switch-row__sub">Pro · renews Nov 12, 2026</div></div>' +
-            '<button class="btn btn--ghost btn--sm" data-action="manage-plan">Manage</button></div>' +
-          '<div class="switch-row"><div><div class="switch-row__title">Billing</div><div class="switch-row__sub">Visa •••• 4242</div></div>' +
-            '<button class="btn btn--ghost btn--sm" data-action="manage-billing">Update</button></div>' +
-          '<div class="switch-row"><div><div class="switch-row__title">Invite others</div><div class="switch-row__sub">Add a collaborator to this account.</div></div>' +
-            '<button class="btn btn--ghost btn--sm" data-action="invite">Invite</button></div>' +
+          '<div class="card__head"><div class="card__title">Plan</div></div>' +
+          '<div class="switch-row"><div><div class="switch-row__title">Linkey beta</div>' +
+            '<div class="switch-row__sub">Every feature is switched on while we test. No card, no charges.</div></div>' +
+            '<span class="pill">Free</span></div>' +
+          (s.user.handle
+            ? '<div class="switch-row"><div><div class="switch-row__title">Public username</div><div class="switch-row__sub">' +
+              esc(s.user.handle) + '</div></div><span class="pill">' + (s.auth && s.auth.onboarded ? "Live" : "Draft") + "</span></div>"
+            : "") +
         "</div>" +
 
         '<div class="card" style="margin-bottom:16px">' +
           '<div class="card__head"><div class="card__title">Security and privacy</div></div>' +
-          '<div class="switch-row"><div><div class="switch-row__title">Multi-factor authentication</div><div class="switch-row__sub">Add another layer of protection to your account.</div></div>' +
-            '<button class="btn btn--ghost btn--sm" data-action="mfa">Enable</button></div>' +
-          '<div class="switch-row"><div><div class="switch-row__title">Google</div><div class="switch-row__sub">vinaysuthar113@gmail.com</div></div>' +
+          '<div class="switch-row"><div><div class="switch-row__title">' + (s.auth && s.auth.provider === "google" ? "Google" : "Sign-in email") + '</div>' +
+            '<div class="switch-row__sub">' + esc(s.user.email || "No address on file") + '</div></div>' +
             '<span class="pill pill--green">' + icon("check", 11) + " Connected</span></div>" +
-          '<div class="switch-row"><div><div class="switch-row__title">Authenticator app</div><div class="switch-row__sub">Use an app to generate one-time codes.</div></div>' +
+          '<div class="switch-row"><div><div class="switch-row__title">Multi-factor authentication</div>' +
+            '<div class="switch-row__sub">Not available in the beta yet.</div></div>' +
             '<span class="pill">Not set up</span></div>' +
         "</div>" +
-
         '<div class="card">' +
           '<div class="card__head"><div class="card__title" style="color:var(--red)">Delete account</div></div>' +
-          '<p class="muted small" style="margin:0 0 12px">This removes your page, links, audience and payouts. It cannot be undone.</p>' +
+          '<p class="muted small" style="margin:0 0 12px">This deletes your page, its links, and the copy saved on this device. It cannot be undone.</p>' +
           '<button class="btn btn--danger btn--sm" data-action="delete-account">Delete account</button>' +
         "</div>" +
       "</div>"
@@ -1248,6 +1250,9 @@
     const plan = S.layoutPlan(links);
     const st = remote ? view.style : S.style();
     const style = remote ? S.styleVarsFor(view.style, t) : S.styleVars();
+    // Settings → Hide branding. The badge is ours, not the owner's, so it
+    // follows the switch; the legal links stay either way.
+    const hideBrand = remote ? view.hideBranding === true : !!S.state.settings.hideBranding;
 
     return (
       '<div class="bio-page" data-layout="' + layout + '" data-shape="' + st.btnShape + '" data-align="' + st.align + '" data-avatar="' + st.avatar + '" data-tex="' + (t.tex ? "1" : "0") + '" style="' + style + '">' +
@@ -1280,7 +1285,7 @@
                 ? ""
                 : '<div style="opacity:.6;font-size:12px">No links yet</div>') +
           "</div>" +
-          '<div class="bio-page__foot">' + brandMark(16) + "Made with linkey" +
+          '<div class="bio-page__foot">' + (hideBrand ? "" : brandMark(16) + "Made with linkey") +
             '<span class="bio-page__legal"><a href="legal.html#terms" target="_blank" rel="noopener">Terms</a>' +
             '<a href="legal.html#privacy" target="_blank" rel="noopener">Privacy</a></span>' +
           "</div>" +

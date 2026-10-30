@@ -52,6 +52,41 @@ ok("addpop: a click inside the dialog does not close it", /e\.target === backdro
 const closestList = (addpopSrc.match(/e\.target\.closest\("([^"]+)"\)/) || [])[1] || "";
 ok("addpop: the backdrop is no longer resolved with closest()", !!closestList && closestList.indexOf("overlay") === -1);
 
+/* Deleting an account has to delete the published row, not just the copy in
+   this browser — otherwise the page stays live and the owner can never take
+   it down. The RLS owner-delete policy already allows it. */
+const cloudSrc = fs.readFileSync(path.join(ROOT, "assets/js/cloud.js"), "utf8");
+const appSrc = fs.readFileSync(path.join(ROOT, "assets/js/app.js"), "utf8");
+ok("cloud: deletePage is exported", /deletePage/.test(cloudSrc) && /deletePage,\s*$|deletePage,/.test(cloudSrc.slice(cloudSrc.indexOf("global.Cloud"))));
+const deleteBlock = (cloudSrc.match(/async function deletePage\(\)[\s\S]*?\n  \}/) || [""])[0];
+ok("cloud: deletePage sends a DELETE", /method: "DELETE"/.test(deleteBlock));
+ok("cloud: deletePage only touches this user's row", /user_id: "eq\." \+ u\.id/.test(deleteBlock));
+ok("cloud: deletePage needs a session", /code: "no-session"/.test(deleteBlock));
+
+ok("account: delete copies the row away", /Cloud\.deletePage\(\)/.test(appSrc));
+ok("account: delete signs out of the cloud", /Cloud\.deletePage\(\)[\s\S]{0,900}?Cloud\.signOut\(\)/.test(appSrc));
+ok("account: delete wipes the device copy", /S\.clearAccount\(\)/.test(appSrc));
+
+/* reset() is the demo shortcut and re-seeds the sample account. Deleting has
+   to empty the device even on a dev host, or the "deleted" page comes back. */
+const wipe = storeFromLocal(memLocal());
+wipe.state.user.handle = "someone";
+wipe.state.links = [{ id: "l1", kind: "link", title: "A", url: "https://a.test", active: true }];
+wipe.clearAccount();
+eq("clearAccount: the handle is gone", wipe.state.user.handle, "");
+eq("clearAccount: the links are gone", wipe.state.links.length, 0);
+eq("clearAccount: the dashboard starts at zero", wipe.state.stats.clicks, 0);
+ok("clearAccount: signed out", !wipe.auth().signedIn);
+ok("account: delete no longer claims to restore demo content", appSrc.indexOf("restores the demo content") === -1);
+ok("account: a failed cloud delete keeps the device copy", /Could not delete your page/.test(appSrc));
+
+/* The username is the public URL: it must pass the same checks as signup. */
+ok("profile: saving an identity validates the handle", /saveIdentity/.test(appSrc));
+ok("profile: an invalid handle is refused", /S\.handleIssue\(next, S\.state\.user\.handle\)/.test(appSrc));
+ok("profile: a taken cloud handle is refused", /check\.taken\) return "That username is taken/.test(appSrc));
+ok("profile: save-user goes through the check", /"save-user": async[\s\S]{0,900}saveIdentity/.test(appSrc));
+ok("profile: save-profile goes through the check", /"save-profile": async[\s\S]{0,400}saveIdentity/.test(appSrc));
+
 /* ---- data integrity -------------------------------------------------- */
 ok("PICKER exists", !!D);
 eq("8 tabs", D.TABS.length, 8);
@@ -273,6 +308,57 @@ eq("signUp: starts with no contacts", L.state.contacts.length, 0);
 eq("signUp: stats start at zero", [L.state.stats.clicks, L.state.stats.views, L.state.stats.revenue], [0, 0, 0]);
 eq("signUp: public domain follows the handle", L.state.settings.domain, "linkey.app/vinay");
 eq("signUp: bio is empty, not the demo's", L.state.profile.bio, "");
+
+/* A cloud account must never inherit the demo seed's traffic. Real users
+   were shown 1,240 clicks, 8,420 views and a $486 balance nobody measured. */
+const seedNumbers = {
+  clicks: 1240, views: 8420, contacts: 4, revenue: 486,
+  daily: [42, 58, 51, 74, 66, 92, 88, 103, 96, 118, 132, 121, 140, 152],
+  sources: [{ label: "Instagram", value: 48 }]
+};
+
+function storeFromLocal(local) {
+  const sb = { console, localStorage: local, URL };
+  sb.window = sb;
+  sb.globalThis = sb;
+  vm.createContext(sb);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, "assets/js/store.js"), "utf8"), sb, { filename: "assets/js/store.js" });
+  return sb.Store;
+}
+
+const cloudLocal = memLocal();
+const cloudWriter = storeFromLocal(cloudLocal);
+cloudWriter.state.auth = { signedIn: true, provider: "google", onboarded: true, since: 1, userId: "u-1", email: "a@b.co", cloud: true };
+cloudWriter.state.stats = seedNumbers;
+cloudWriter.commit();
+const cloudReader = storeFromLocal(cloudLocal);
+eq("cloud: seeded clicks are cleared on load", cloudReader.state.stats.clicks, 0);
+eq("cloud: seeded revenue is cleared on load", cloudReader.state.stats.revenue, 0);
+eq("cloud: seeded sources are cleared on load", cloudReader.state.stats.sources.length, 0);
+
+const demoLocal = memLocal();
+const demoWriter = storeFromLocal(demoLocal);
+demoWriter.state.auth = { signedIn: true, provider: "local", onboarded: true, since: 1, userId: "", email: "", cloud: false };
+demoWriter.state.stats = seedNumbers;
+demoWriter.commit();
+const demoReader = storeFromLocal(demoLocal);
+eq("demo: the seed's own numbers survive a reload", demoReader.state.stats.clicks, 1240);
+
+const restoredOnDevice = storeFromLocal(memLocal());
+restoredOnDevice.adoptCloudUser({ id: "u-2", email: "b@c.co", name: "B", provider: "google" },
+  { handle: "tester", onboarded: true, data: { name: "B", bio: "hi", theme: "sand", links: [], platforms: [] } });
+eq("cloud: a page restored from Postgres starts at zero", [restoredOnDevice.state.stats.clicks, restoredOnDevice.state.stats.views, restoredOnDevice.state.stats.revenue], [0, 0, 0]);
+eq("cloud: the restored page keeps its handle", restoredOnDevice.state.user.handle, "tester");
+eq("cloud: a restored page clears the demo's seo description", restoredOnDevice.state.settings.seoDescription, "hi");
+
+const roundTrip = storeFromLocal(memLocal());
+roundTrip.adoptCloudUser({ id: "u-3", email: "c@d.co", name: "C", provider: "google" },
+  { handle: "carol", onboarded: true, data: { name: "C", bio: "bio", seoTitle: "Carol — design", seoDescription: "Made things.", hideBranding: true, links: [], platforms: [] } });
+eq("cloud: a restored seo title survives", roundTrip.state.settings.seoTitle, "Carol — design");
+eq("cloud: a restored seo description survives", roundTrip.state.settings.seoDescription, "Made things.");
+eq("cloud: a hidden badge stays hidden after restore", roundTrip.state.settings.hideBranding, true);
+eq("cloud: the restored snapshot keeps the hidden badge", roundTrip.cloudSnapshot().data.hideBranding, true);
+eq("cloud: the restored snapshot keeps the seo title", roundTrip.cloudSnapshot().data.seoTitle, "Carol — design");
 
 /* setup finishes the account */
 r = L.completeSetup({ handle: "vinay", name: "V", bio: "hi" });
@@ -575,7 +661,7 @@ eq("freshSetup: no platforms yet", O.freshSetup("ada", "Ada", "").platforms, [])
 const snap = D4.cloudSnapshot();
 eq("snapshot: carries the handle", snap.handle, "ada.chen");
 eq("snapshot: marked onboarded", snap.onboarded, true);
-eq("snapshot: has the whole page", Object.keys(snap.data).sort(), ["avatar", "bio", "goal", "layout", "links", "name", "platforms", "style", "theme"]);
+eq("snapshot: has the whole page", Object.keys(snap.data).sort(), ["avatar", "bio", "goal", "hideBranding", "layout", "links", "name", "platforms", "seoDescription", "seoTitle", "style", "theme"]);
 eq("snapshot: links travel with it", snap.data.links.length, 4);
 
 /* ---- pages: link formats --------------------------------------------- */
@@ -756,6 +842,40 @@ ok("bio: the social icon opens outbound", !!socialAnchor && socialAnchor[0].inde
 ok("bio: the social icon carries its url", !!socialAnchor && socialAnchor[0].indexOf('href="https://instagram.com/ada"') !== -1);
 ok("bio: a social-only page does not claim it has no links", socialOnly.indexOf("No links yet") === -1);
 ok("preview: a social-only page does not claim it has no links", bioSandbox.Pages.phoneMarkup().indexOf("phone__empty") === -1);
+
+/* Settings → Hide branding has to reach the public page, not just the switch. */
+D7.state.settings.hideBranding = true;
+const hiddenBrand = bioSandbox.Pages.bioPage();
+ok("bio: hide branding removes the badge", hiddenBrand.indexOf("Made with linkey") === -1);
+ok("bio: hide branding keeps the legal links", hiddenBrand.indexOf("legal.html#terms") !== -1);
+D7.state.settings.hideBranding = false;
+ok("bio: the badge returns when branding is shown", bioSandbox.Pages.bioPage().indexOf("Made with linkey") !== -1);
+
+/* Profile has to describe this account, not a stranger's. The demo build
+   shipped a hardcoded "Pro · renews Nov 12, 2026", a "Visa •••• 4242" row and
+   the owner's Gmail address for every signed-in user. */
+const profile = bioSandbox.Pages.PAGES.profile();
+ok("profile: no invented Pro plan", profile.indexOf('pill--accent">Pro<') === -1 && profile.indexOf("Subscription plan") === -1);
+ok("profile: no invented renewal date", profile.indexOf("Nov 12, 2026") === -1);
+ok("profile: no invented card", profile.indexOf("4242") === -1);
+ok("profile: no owner email for other users", profile.indexOf("vinaysuthar113@gmail.com") === -1);
+ok("profile: no dead plan button", profile.indexOf('data-action="manage-plan"') === -1);
+ok("profile: no dead billing button", profile.indexOf('data-action="manage-billing"') === -1);
+ok("profile: no dead invite button", profile.indexOf('data-action="invite"') === -1);
+ok("profile: no fake MFA button", profile.indexOf('data-action="mfa"') === -1);
+ok("profile: shows this account's own email", profile.indexOf("ada@northwind.com") !== -1);
+ok("profile: the beta is labelled free", profile.indexOf("Free") !== -1);
+ok("profile: MFA is honest about the beta", /Not available in the beta/.test(profile));
+ok("profile: delete still works", profile.indexOf('data-action="delete-account"') !== -1);
+
+D7.state.auth.provider = "google";
+ok("profile: a Google account names Google", bioSandbox.Pages.PAGES.profile().indexOf("Google") !== -1);
+D7.state.auth.provider = "local";
+ok("profile: a local account does not claim Google", bioSandbox.Pages.PAGES.profile().indexOf("Google") === -1);
+D7.state.auth.cloud = true;
+ok("profile: a cloud email is read-only", /id="f-user-email"[^>]*readonly/.test(bioSandbox.Pages.PAGES.profile()));
+D7.state.auth.cloud = false;
+ok("profile: a local email stays editable", !/id="f-user-email"[^>]*readonly/.test(bioSandbox.Pages.PAGES.profile()));
 
 /* ---- cloud client: unconfigured -------------------------------------- */
 function cloudSandboxWith(config, opts) {
@@ -1378,6 +1498,20 @@ eq("view: markup in the name is kept as text",
   "<img src=x onerror=alert(1)>");
 const styledView = PV.publicView(ROW);
 ok("view: the page uses the stored style", PV.styleVarsFor(styledView.style, PV.themeById(styledView.theme)).indexOf("--p-accent:#123456") !== -1);
+
+/* Settings → SEO title/description were collected but never published, so a
+   share card ignored what the owner typed. They travel with the row now. */
+const seoRow = Object.assign({}, ROW, { data: Object.assign({}, ROW.data, { seoTitle: "Ada Chen — design systems", seoDescription: "Type, systems, links." }) });
+eq("view: the seo title is published", PV.publicView(seoRow).seoTitle, "Ada Chen — design systems");
+eq("view: the seo description is published", PV.publicView(seoRow).seoDescription, "Type, systems, links.");
+eq("view: seo falls back to the name", PV.publicView(ROW).seoTitle, "Ada Chen");
+eq("view: seo description falls back to the bio", PV.publicView(ROW).seoDescription, "Design systems and type.");
+eq("view: a long seo title is cut", PV.publicView(Object.assign({}, ROW, { data: Object.assign({}, ROW.data, { seoTitle: "t".repeat(200) }) })).seoTitle.length, 70);
+eq("view: branding is kept unless the owner hid it", PV.publicView(ROW).hideBranding, false);
+eq("view: a hidden badge is published", PV.publicView(Object.assign({}, ROW, { data: Object.assign({}, ROW.data, { hideBranding: true }) })).hideBranding, true);
+const seoSnap = L.cloudSnapshot();
+ok("cloud: the seo title is written with the page", typeof seoSnap.data.seoTitle === "string");
+ok("cloud: the seo description is written with the page", typeof seoSnap.data.seoDescription === "string");
 
 /* the renderer escapes a remote row and never shows the owner's editor */
 const remoteSandbox = { console, Store: PV, icon: () => "<svg></svg>", URL };

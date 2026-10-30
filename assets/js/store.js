@@ -766,6 +766,21 @@
     return /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(String(location.hostname || ""));
   }
 
+  /** zeroStats - a measurement of nothing. Used wherever an account must
+   *  start without the demo seed's numbers. */
+  function zeroStats() {
+    return {
+      clicks: 0, views: 0, contacts: 0, revenue: 0,
+      daily: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      sources: []
+    };
+  }
+
+  /** isSeedStats - true for the exact numbers in defaultState().stats. */
+  function isSeedStats(st) {
+    return !!st && st.clicks === 1240 && st.views === 8420 && st.contacts === 4 && st.revenue === 486;
+  }
+
   /** emptyState - a first-run account with nothing of anyone else in it. */
   function emptyState() {
     const s = defaultState();
@@ -783,8 +798,11 @@
     s.rules = [];
     s.notifications = [];
     s.auth = { signedIn: false, provider: "local", onboarded: false, since: 0, userId: "", email: "", cloud: false };
-    s.settings = Object.assign({}, s.settings, { domain: "", seoTitle: "" });
+    s.settings = Object.assign({}, s.settings, { domain: "", seoTitle: "", seoDescription: "" });
     s.ui = Object.assign({}, s.ui, { setup: null });
+    // The seed's traffic, contacts and revenue belong to the demo account.
+    // A real account must never inherit them.
+    s.stats = zeroStats();
     return s;
   }
 
@@ -799,7 +817,7 @@
       const parsed = JSON.parse(raw);
       const base = defaultState();
       if (parsed.seedVersion !== SEED_VERSION) return firstRun();
-      return {
+      const merged = {
         ...base,
         ...parsed,
         user: { ...base.user, ...(parsed.user || {}) },
@@ -809,6 +827,11 @@
         auth: { ...base.auth, ...(parsed.auth || {}) },
         stats: { ...base.stats, ...(parsed.stats || {}) }
       };
+      // Earlier builds saved the seed's traffic and revenue into cloud
+      // accounts. Clear that once, on load, so the dashboard stops claiming
+      // numbers nobody measured.
+      if (merged.auth && merged.auth.cloud && isSeedStats(merged.stats)) merged.stats = zeroStats();
+      return merged;
     } catch (e) {
       return firstRun();
     }
@@ -823,6 +846,18 @@
   function commit() { save(); listeners.forEach((fn) => fn(state)); }
 
   function reset() { state = demoAllowed() ? defaultState() : emptyState(); commit(); }
+
+  /**
+   * clearAccount - remove this device's copy for good.
+   *
+   * reset() is the demo shortcut: on a dev host it re-seeds the sample
+   * account. Deleting an account must not do that, so it wipes to the
+   * empty first-run state everywhere.
+   */
+  function clearAccount() {
+    state = emptyState();
+    commit();
+  }
 
   /* ---------- selectors ---------- */
   const theme = () => THEMES[state.profile.theme] || THEMES.chocolate;
@@ -1112,11 +1147,7 @@
       seoDescription: "",
       viewMode: "list"
     });
-    state.stats = {
-      clicks: 0, views: 0, contacts: 0, revenue: 0,
-      daily: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      sources: []
-    };
+    state.stats = zeroStats();
   }
 
   /** signUp - create the local account and send the owner to setup. */
@@ -1248,10 +1279,18 @@
           platforms: (Array.isArray(data.platforms) ? data.platforms : []).filter((id) => platformById(id)).slice(0, MAX_PLATFORMS)
         };
         state.links = sanitizeLinks(data.links);
+        // Publish/restore must round-trip: if the row carries an SEO title
+        // or the hidden-branding switch, put it back before the next
+        // autosave overwrites the row with defaults.
         state.settings = Object.assign({}, state.settings, {
           domain: "linkey.app/" + handle,
-          seoTitle: String(data.name || name).slice(0, 60) + " — links"
+          seoTitle: String(data.seoTitle || "").trim().slice(0, 70) || String(data.name || name).slice(0, 60) + " — links",
+          seoDescription: String(data.seoDescription || "").trim().slice(0, 160) || String(data.bio || "").slice(0, 160),
+          hideBranding: data.hideBranding === true
         });
+        // Analytics live on the device, not in the cloud row: the restored
+        // page starts from nothing rather than the demo seed's numbers.
+        state.stats = zeroStats();
         state.auth = {
           signedIn: true, provider: provider, onboarded: true, since: Date.now(),
           userId: u.id, email: email, cloud: true
@@ -1406,10 +1445,14 @@
       }
     });
     const name = String(data.name || handle).replace(/\s+/g, " ").trim().slice(0, 60) || handle;
+    const bio = String(data.bio || "").replace(/\s+/g, " ").slice(0, 160);
     return {
       handle: handle,
       name: name,
-      bio: String(data.bio || "").replace(/\s+/g, " ").slice(0, 160),
+      bio: bio,
+      seoTitle: String(data.seoTitle || name).replace(/\s+/g, " ").trim().slice(0, 70) || name,
+      seoDescription: String(data.seoDescription || bio).replace(/\s+/g, " ").trim().slice(0, 160),
+      hideBranding: data.hideBranding === true,
       avatar: safeAvatar(data.avatar),
       theme: THEMES[data.theme] ? data.theme : "chocolate",
       layout: LAYOUTS.some((l) => l.id === data.layout) ? data.layout : "list",
@@ -1433,6 +1476,9 @@
         style: style(),
         goal: state.profile.goal || "",
         platforms: state.profile.platforms || [],
+        seoTitle: String(state.settings.seoTitle || "").trim().slice(0, 70),
+        seoDescription: String(state.settings.seoDescription || "").trim().slice(0, 160),
+        hideBranding: !!state.settings.hideBranding,
         links: state.links
       }
     };
@@ -1578,7 +1624,7 @@
     sanitizeStyle, style, setStyle, resetStyle, styleVars, styleVarsFor, themeById, publicView,
     hexToRgb, luminance, pickText, rgba, shade,
     get state() { return state; },
-    subscribe, commit, reset, save,
+    subscribe, commit, reset, clearAccount, save,
     theme, activeLinks, socialLinks, buttonLinks, publicUrl,
     layout, setLayout, autoSpan, layoutPlan, cycleSpan,
     productTotals,
