@@ -412,7 +412,7 @@ ok("completeSetup: succeeds", r.ok, JSON.stringify(r));
 ok("completeSetup: marks onboarded", L.isOnboarded());
 eq("completeSetup: bio trimmed", L.state.profile.bio, "Design that feels personal.");
 eq("completeSetup: layout applied", L.state.profile.layout, "bento");
-eq("completeSetup: theme applied", L.state.profile.theme, "chocolate");
+eq("completeSetup: theme applied", L.state.profile.theme, "bubblegum");
 eq("completeSetup: domain tracks the final handle", L.state.settings.domain, "linkey.app/vinay");
 eq("completeSetup: setup draft cleared", L.state.ui.setup, null);
 r = L.completeSetup({ handle: "vinay", name: "Vinay Suthar", layout: "nonsense" });
@@ -647,7 +647,7 @@ const restored = await D2.adoptCloudUser(CLOUD_USER, pageRow);
 ok("cloud: a saved page hydrates", restored.hydrated === true, JSON.stringify(restored));
 ok("cloud: hydrated account is onboarded", D2.isOnboarded());
 eq("cloud: handle restored", D2.state.user.handle, "northwind");
-eq("cloud: theme restored", D2.state.profile.theme, "halo");
+eq("cloud: theme restored", D2.state.profile.theme, "bubblegum");
 eq("cloud: layout restored", D2.state.profile.layout, "bento");
 eq("cloud: links restored", D2.state.links.length, 3);
 eq("cloud: product price restored", D2.state.links[0].price, 38);
@@ -682,7 +682,7 @@ ok("setup: completes", setup.ok, JSON.stringify(setup));
 eq("setup: bio trimmed", D4.state.profile.bio, "Design that feels personal.");
 eq("setup: goal stored", D4.state.profile.goal, "build");
 eq("setup: platforms capped at five", D4.state.profile.platforms.length, 5);
-eq("setup: theme applied", D4.state.profile.theme, "halo");
+eq("setup: theme applied", D4.state.profile.theme, "bubblegum");
 eq("setup: layout applied", D4.state.profile.layout, "bento");
 eq("setup: unsafe avatar refused", D4.state.user.avatar, "");
 eq("setup: links installed", [D4.state.links.length, D4.state.profile.socials.length], [4, 3]);
@@ -693,7 +693,7 @@ const D5 = freshStore();
 D5.signUp({ name: "Ada Chen", email: "ada@northwind.com", handle: "ada.chen" });
 ok("setup: invalid goal is ignored", D5.completeSetup({ handle: "ada.chen", name: "Ada Chen", goal: "exploit" }).ok);
 eq("setup: invalid goal falls back", D5.state.profile.goal, "");
-eq("setup: invalid theme ignored", D5.state.profile.theme, "chocolate");
+eq("setup: invalid theme ignored", D5.state.profile.theme, "bubblegum");
 ok("setup: reserved handle refused", !D5.completeSetup({ handle: "admin", name: "Ada" }).ok);
 ok("setup: short name refused", !D5.completeSetup({ handle: "ada.chen", name: "A" }).ok);
 
@@ -1629,7 +1629,7 @@ const ROW = {
 
 eq("view: a valid row becomes a page", PV.publicView(ROW).handle, "ada.chen");
 eq("view: the name is kept", PV.publicView(ROW).name, "Ada Chen");
-eq("view: the theme is kept", PV.publicView(ROW).theme, "halo");
+eq("view: the theme is kept", PV.publicView(ROW).theme, "bubblegum");
 eq("view: the layout is kept", PV.publicView(ROW).layout, "bento");
 eq("view: inactive links are dropped", PV.publicView(ROW).links.some((l) => l.title === "Hidden"), false);
 eq("view: a javascript url is emptied", PV.publicView(ROW).links.find((l) => l.title === "Bad").url, "");
@@ -1641,7 +1641,17 @@ eq("view: a row that is not onboarded is not a page", PV.publicView(Object.assig
 eq("view: a row without data is not a page", PV.publicView({ handle: "x", onboarded: true }), null);
 eq("view: a reserved handle is not a page", PV.publicView(Object.assign({}, ROW, { handle: "admin" })), null);
 eq("view: a junk handle is not a page", PV.publicView(Object.assign({}, ROW, { handle: "../../etc" })), null);
-eq("view: an unknown theme falls back", PV.publicView(Object.assign({}, ROW, { data: Object.assign({}, ROW.data, { theme: "neon" }) })).theme, "chocolate");
+eq("view: an unknown theme falls back", PV.publicView(Object.assign({}, ROW, { data: Object.assign({}, ROW.data, { theme: "neon" }) })).theme, "bubblegum");
+
+/* ---- custom themes from the component page ---------------------------- */
+const themeNames = ["bubblegum","hadalpelagic","art_gallery","gray_waves","bistro","rave","aoshi","golden_hour","sakura","dark_ember","dojo","aesthetic","runner","slam_dunk","monolith","sunset_sip","riviera","deep_space","stray","summit","cosmos","wildlife","speakeasy","climber"];
+for (const t of themeNames) {
+  ok("theme: " + t + " exists", !!O.THEMES[t]);
+  ok("theme: " + t + " has bg", !!O.THEMES[t].bg);
+  ok("theme: " + t + " has fg", !!O.THEMES[t].fg);
+  ok("theme: " + t + " has btn", !!O.THEMES[t].btn);
+  ok("theme: " + t + " has swatch", !!O.THEMES[t].swatch);
+}
 eq("view: a long bio is cut", PV.publicView(Object.assign({}, ROW, { data: Object.assign({}, ROW.data, { bio: "a".repeat(500) }) })).bio.length, 160);
 eq("view: a javascript avatar is dropped", PV.publicView(Object.assign({}, ROW, { data: Object.assign({}, ROW.data, { avatar: "javascript:alert(1)" }) })).avatar, "");
 eq("view: markup in the name is kept as text",

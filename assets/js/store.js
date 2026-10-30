@@ -4,123 +4,152 @@
   const SEED_VERSION = 2;
 
   const THEMES = {
-    chocolate: {
-      name: "Chocolate",
-      bg: "linear-gradient(168deg,#a96c51 0%,#92503a 32%,#85452e 62%,#743b26 100%)",
+    bubblegum: {
+      name: "Bubblegum",
+      bg: "linear-gradient(160deg,#C5B3FA 0%,#2B1EFF 29%,#EF38AB 74%,#FFD2F7 100%)",
       tex: 1,
-      fg: "#fdf6ea",
-      btn: "#f2e6c0", btnBorder: "transparent", btnFg: "#3a1f12", btnHover: "#f8efd2",
-      swatch: "linear-gradient(160deg,#a96c51,#743b26)",
+      fg: "#F9FBFF",
+      btn: "#9354C1", btnBorder: "#9354C1", btnFg: "#FFFFFF", btnHover: "#b778dd",
+      swatch: "linear-gradient(160deg,#C5B3FA,#2B1EFF,#EF38AB,#FFD2F7)",
       overlay: "none", overlayOp: 0
     },
-    custom: {
-      name: "Custom",
-      bg: "#ffffff", fg: "#1f1f1f",
-      btn: "#f4f4f4", btnBorder: "#e6e6e6", btnFg: "#1f1f1f", btnHover: "#ececec",
-      swatch: "linear-gradient(135deg,#fff 0 50%,#1f1f1f 50% 100%)", overlay: "none", overlayOp: 0
-    },
-    backdrop: {
-      name: "Backdrop",
-      bg: "#f6f1e7", fg: "#2a2117",
-      btn: "#ffffff", btnBorder: "#e7dccb", btnFg: "#2a2117", btnHover: "#fffdf8",
-      swatch: "linear-gradient(160deg,#f6f1e7,#e7dccb)", overlay: "none", overlayOp: 0
-    },
-    halo: {
-      name: "Halo",
-      bg: "radial-gradient(120% 90% at 50% 0%,#ffd9c7 0%,#ffe9df 45%,#fff6f1 100%)",
-      fg: "#3b1c0d",
-      btn: "rgba(255,255,255,.72)", btnBorder: "rgba(59,28,13,.1)", btnFg: "#3b1c0d", btnHover: "#fff",
-      swatch: "radial-gradient(120% 90% at 50% 0%,#ffb08a,#fff6f1)", overlay: "none", overlayOp: 0
-    },
-    dash: {
-      name: "Dash",
-      bg: "#1f1f1f", fg: "#f5f5f5",
+    hadalpelagic: {
+      name: "Hadalpelagic",
+      bg: "#1A1A1A", fg: "#F5F5F5",
       btn: "rgba(255,255,255,.08)", btnBorder: "rgba(255,255,255,.16)", btnFg: "#f5f5f5", btnHover: "rgba(255,255,255,.16)",
       swatch: "linear-gradient(160deg,#2c2c2c,#111)", overlay: "none", overlayOp: 0
     },
-    misty: {
-      name: "Misty",
-      bg: "linear-gradient(180deg,#dfe7ee,#eef3f7)", fg: "#22303c",
-      btn: "rgba(255,255,255,.75)", btnBorder: "rgba(34,48,60,.1)", btnFg: "#22303c", btnHover: "#fff",
-      swatch: "linear-gradient(180deg,#cbd8e3,#eef3f7)", overlay: "none", overlayOp: 0
+    art_gallery: {
+      name: "Art Gallery",
+      bg: "#212121", fg: "#EDEDED",
+      btn: "rgba(255,255,255,.08)", btnBorder: "rgba(255,255,255,.16)", btnFg: "#ededed", btnHover: "rgba(255,255,255,.16)",
+      swatch: "linear-gradient(160deg,#2c2c2c,#111)", overlay: "none", overlayOp: 0
     },
-    glass: {
-      name: "Glass",
-      bg: "linear-gradient(160deg,#8ea7ff 0%,#c3a6ff 48%,#ffb3c7 100%)", fg: "#191a2b",
-      btn: "rgba(255,255,255,.34)", btnBorder: "rgba(255,255,255,.55)", btnFg: "#191a2b", btnHover: "rgba(255,255,255,.5)",
-      swatch: "linear-gradient(160deg,#8ea7ff,#ffb3c7)", overlay: "none", overlayOp: 0
+    gray_waves: {
+      name: "Gray Waves",
+      bg: "linear-gradient(160deg,#161B3A 0%,#595E77 50%,#171B32 100%)", fg: "#F0F0F0",
+      btn: "rgba(255,255,255,.18)", btnBorder: "rgba(255,255,255,.3)", btnFg: "#f0f0f0", btnHover: "rgba(255,255,255,.3)",
+      swatch: "linear-gradient(160deg,#161B3A,#171B32)", overlay: "none", overlayOp: 0
     },
-    figtree: {
-      name: "Figtree",
-      bg: "#0f3b2e", fg: "#eaf6ef",
-      btn: "rgba(234,246,239,.1)", btnBorder: "rgba(234,246,239,.22)", btnFg: "#eaf6ef", btnHover: "rgba(234,246,239,.18)",
-      swatch: "linear-gradient(160deg,#1a5b47,#08241c)", overlay: "none", overlayOp: 0
+    bistro: {
+      name: "Bistro",
+      bg: "#666666", fg: "#FFA030",
+      btn: "rgba(255,255,255,.22)", btnBorder: "rgba(102,102,102,.16)", btnFg: "#ffa030", btnHover: "rgba(255,255,255,.34)",
+      swatch: "linear-gradient(150deg,#8a8a8a,#666666)", overlay: "none", overlayOp: 0
     },
-    gelato: {
-      name: "Gelato",
-      bg: "linear-gradient(150deg,#ffd9e8 0%,#ffe9c9 50%,#d9f2ff 100%)", fg: "#4a2436",
-      btn: "rgba(255,255,255,.7)", btnBorder: "rgba(74,36,54,.1)", btnFg: "#4a2436", btnHover: "#fff",
-      swatch: "linear-gradient(150deg,#ffd9e8,#d9f2ff)", overlay: "none", overlayOp: 0
+    rave: {
+      name: "Rave",
+      bg: "#EFEFEF", fg: "#212121",
+      btn: "#e8e8e8", btnBorder: "#dcdcdc", btnFg: "#212121", btnHover: "#dddddd",
+      swatch: "linear-gradient(135deg,#fff 0 50%,#212121 50% 100%)", overlay: "none", overlayOp: 0
     },
-    abstract: {
-      name: "Abstract",
-      bg: "linear-gradient(135deg,#ff5000 0%,#ff8a3d 45%,#fbc02d 100%)", fg: "#2b1200",
-      btn: "rgba(255,255,255,.22)", btnBorder: "rgba(43,18,0,.16)", btnFg: "#2b1200", btnHover: "rgba(255,255,255,.34)",
-      swatch: "linear-gradient(135deg,#ff5000,#fbc02d)", overlay: "none", overlayOp: 0
+    aoshi: {
+      name: "Aoshi",
+      bg: "#1a1a1a", fg: "#212121",
+      btn: "rgba(255,255,255,.08)", btnBorder: "rgba(255,255,255,.16)", btnFg: "#f5f5f5", btnHover: "rgba(255,255,255,.16)",
+      swatch: "linear-gradient(160deg,#2c2c2c,#111)", overlay: "none", overlayOp: 0
     },
-    drift: {
-      name: "Drift",
-      bg: "linear-gradient(180deg,#0b1020 0%,#1b2a4a 55%,#33507a 100%)", fg: "#e9f0ff",
-      btn: "rgba(233,240,255,.09)", btnBorder: "rgba(233,240,255,.2)", btnFg: "#e9f0ff", btnHover: "rgba(233,240,255,.18)",
-      swatch: "linear-gradient(180deg,#0b1020,#33507a)", overlay: "none", overlayOp: 0
-    },
-    extra: {
-      name: "Extra",
-      bg: "#fbc02d", fg: "#241a00",
-      btn: "rgba(255,255,255,.4)", btnBorder: "rgba(36,26,0,.16)", btnFg: "#241a00", btnHover: "rgba(255,255,255,.62)",
-      swatch: "linear-gradient(150deg,#ffd95c,#fbc02d)", overlay: "none", overlayOp: 0
-    },
-    zen: {
-      name: "Zen",
-      bg: "#e9e5da", fg: "#33302a",
-      btn: "rgba(255,255,255,.55)", btnBorder: "rgba(51,48,42,.12)", btnFg: "#33302a", btnHover: "#fff",
-      swatch: "linear-gradient(150deg,#f2efe6,#d8d3c5)", overlay: "none", overlayOp: 0
-    },
-    golden: {
+    golden_hour: {
       name: "Golden hour",
       bg: "linear-gradient(160deg,#ffb347 0%,#ff7b54 55%,#c2410c 100%)", fg: "#fff6ee",
       btn: "rgba(255,255,255,.18)", btnBorder: "rgba(255,255,255,.3)", btnFg: "#fff6ee", btnHover: "rgba(255,255,255,.3)",
       swatch: "linear-gradient(160deg,#ffb347,#c2410c)", overlay: "none", overlayOp: 0
     },
-    ivory: {
-      name: "Ivory",
-      bg: "#fffdf7", fg: "#2b2b2b",
-      btn: "#f7f1dc", btnBorder: "#e8dfc4", btnFg: "#2b2b2b", btnHover: "#f2ead0",
-      swatch: "linear-gradient(150deg,#fffdf7,#f7f1dc)", overlay: "none", overlayOp: 0
-    },
-    blush: {
-      name: "Blush",
-      bg: "linear-gradient(170deg,#ffe3e3,#ffd0e0)", fg: "#5a2337",
+    sakura: {
+      name: "Sakura",
+      bg: "linear-gradient(160deg,#FFDCF9 0%,#FF97EE 50%,#FF6AE6 100%)", fg: "#5a2337",
       btn: "rgba(255,255,255,.6)", btnBorder: "rgba(90,35,55,.1)", btnFg: "#5a2337", btnHover: "#fff",
-      swatch: "linear-gradient(170deg,#ffe3e3,#ffd0e0)", overlay: "none", overlayOp: 0
+      swatch: "linear-gradient(170deg,#FFDCF9,#FF6AE6)", overlay: "none", overlayOp: 0
     },
-    bloom: {
-      name: "Bloom",
-      bg: "linear-gradient(150deg,#d9f99d 0%,#bbf7d0 50%,#a7f3d0 100%)", fg: "#14532d",
-      btn: "rgba(255,255,255,.5)", btnBorder: "rgba(20,83,45,.12)", btnFg: "#14532d", btnHover: "rgba(255,255,255,.72)",
-      swatch: "linear-gradient(150deg,#d9f99d,#a7f3d0)", overlay: "none", overlayOp: 0
+    dark_ember: {
+      name: "Dark Ember",
+      bg: "#2a1a1a", fg: "#FF4A00",
+      btn: "rgba(255,255,255,.18)", btnBorder: "rgba(42,26,26,.16)", btnFg: "#ff4a00", btnHover: "rgba(255,255,255,.3)",
+      swatch: "linear-gradient(160deg,#4a1a1a,#2a1a1a)", overlay: "none", overlayOp: 0
     },
-    beach: {
-      name: "Beach",
-      bg: "linear-gradient(180deg,#a5f3fc 0%,#fef3c7 100%)", fg: "#134e4a",
-      btn: "rgba(255,255,255,.55)", btnBorder: "rgba(19,78,74,.12)", btnFg: "#134e4a", btnHover: "#fff",
-      swatch: "linear-gradient(180deg,#a5f3fc,#fef3c7)", overlay: "none", overlayOp: 0
+    dojo: {
+      name: "Dojo",
+      bg: "linear-gradient(160deg,#548D5D 0%,#DEEFE1 100%)", fg: "#262626",
+      btn: "rgba(255,255,255,.5)", btnBorder: "rgba(20,83,45,.12)", btnFg: "#262626", btnHover: "rgba(255,255,255,.72)",
+      swatch: "linear-gradient(150deg,#548D5D,#DEEFE1)", overlay: "none", overlayOp: 0
     },
-    sand: {
-      name: "Gold sand",
-      bg: "linear-gradient(160deg,#e7d3b1,#cdae80)", fg: "#3a2a12",
-      btn: "rgba(255,255,255,.35)", btnBorder: "rgba(58,42,18,.14)", btnFg: "#3a2a12", btnHover: "rgba(255,255,255,.55)",
-      swatch: "linear-gradient(160deg,#e7d3b1,#cdae80)", overlay: "none", overlayOp: 0
+    aesthetic: {
+      name: "Aesthetic",
+      bg: "#f2efe6", fg: "#552328",
+      btn: "#e8dfc4", btnBorder: "#d8d3c5", btnFg: "#552328", btnHover: "#ead6b0",
+      swatch: "linear-gradient(150deg,#f2efe6,#d8d3c5)", overlay: "none", overlayOp: 0
+    },
+    runner: {
+      name: "Runner",
+      bg: "#1f1f1f", fg: "#D9D9D9",
+      btn: "rgba(255,255,255,.08)", btnBorder: "rgba(255,255,255,.16)", btnFg: "#d9d9d9", btnHover: "rgba(255,255,255,.16)",
+      swatch: "linear-gradient(160deg,#2c2c2c,#111)", overlay: "none", overlayOp: 0
+    },
+    slam_dunk: {
+      name: "Slam Dunk",
+      bg: "#f4f4f4", fg: "#212121",
+      btn: "#e8e8e8", btnBorder: "#dcdcdc", btnFg: "#212121", btnHover: "#dddddd",
+      swatch: "linear-gradient(135deg,#fff 0 50%,#212121 50% 100%)", overlay: "none", overlayOp: 0
+    },
+    monolith: {
+      name: "Monolith",
+      bg: "#2a2a2a", fg: "#999999",
+      btn: "rgba(255,255,255,.08)", btnBorder: "rgba(255,255,255,.16)", btnFg: "#999999", btnHover: "rgba(255,255,255,.16)",
+      swatch: "linear-gradient(160deg,#3c3c3c,#1a1a1a)", overlay: "none", overlayOp: 0
+    },
+    sunset_sip: {
+      name: "Sunset Sip",
+      bg: "#212121", fg: "#FFC92B",
+      btn: "rgba(255,255,255,.18)", btnBorder: "rgba(34,34,34,.16)", btnFg: "#ffc92b", btnHover: "rgba(255,255,255,.3)",
+      swatch: "linear-gradient(160deg,#3a3a3a,#212121)", overlay: "none", overlayOp: 0
+    },
+    riviera: {
+      name: "Riviera",
+      bg: "#f5f5f5", fg: "#1652AA",
+      btn: "#e8e8e8", btnBorder: "#dcdcdc", btnFg: "#1652aa", btnHover: "#dddddd",
+      swatch: "linear-gradient(135deg,#fff 0 50%,#1652aa 50% 100%)", overlay: "none", overlayOp: 0
+    },
+    deep_space: {
+      name: "Deep Space",
+      bg: "#007BD7", fg: "#020202",
+      btn: "rgba(255,255,255,.34)", btnBorder: "rgba(255,255,255,.55)", btnFg: "#020202", btnHover: "rgba(255,255,255,.5)",
+      swatch: "linear-gradient(160deg,#1a8fe3,#007BD7)", overlay: "none", overlayOp: 0
+    },
+    stray: {
+      name: "Stray",
+      bg: "#212121", fg: "#FFC92B",
+      btn: "rgba(255,255,255,.18)", btnBorder: "rgba(34,34,34,.16)", btnFg: "#ffc92b", btnHover: "rgba(255,255,255,.3)",
+      swatch: "linear-gradient(160deg,#3a3a3a,#212121)", overlay: "none", overlayOp: 0
+    },
+    summit: {
+      name: "Summit",
+      bg: "#e9e5da", fg: "#47B989",
+      btn: "rgba(255,255,255,.55)", btnBorder: "rgba(51,48,42,.12)", btnFg: "#47b989", btnHover: "#fff",
+      swatch: "linear-gradient(150deg,#f2efe6,#d8d3c5)", overlay: "none", overlayOp: 0
+    },
+    cosmos: {
+      name: "Cosmos",
+      bg: "#1a1a2e", fg: "#CCB689",
+      btn: "rgba(255,255,255,.18)", btnBorder: "rgba(26,26,46,.16)", btnFg: "#ccb689", btnHover: "rgba(255,255,255,.3)",
+      swatch: "linear-gradient(160deg,#2a2a4e,#1a1a2e)", overlay: "none", overlayOp: 0
+    },
+    wildlife: {
+      name: "Wildlife",
+      bg: "#2d2d2d", fg: "#FF8636",
+      btn: "rgba(255,255,255,.18)", btnBorder: "rgba(45,45,45,.16)", btnFg: "#ff8636", btnHover: "rgba(255,255,255,.3)",
+      swatch: "linear-gradient(160deg,#3f3f3f,#2d2d2d)", overlay: "none", overlayOp: 0
+    },
+    speakeasy: {
+      name: "Speakeasy",
+      bg: "#361507", fg: "#FBFBFB",
+      btn: "rgba(255,255,255,.18)", btnBorder: "rgba(54,21,7,.16)", btnFg: "#fbfbfb", btnHover: "rgba(255,255,255,.3)",
+      swatch: "linear-gradient(160deg,#4a1f0b,#361507)", overlay: "none", overlayOp: 0
+    },
+    climber: {
+      name: "Climber",
+      bg: "linear-gradient(160deg,#D6CAFE 0%,#9E81FE 100%)", fg: "#3a1c5a",
+      btn: "rgba(255,255,255,.6)", btnBorder: "rgba(58,28,90,.1)", btnFg: "#3a1c5a", btnHover: "#fff",
+      swatch: "linear-gradient(160deg,#D6CAFE,#9E81FE)", overlay: "none", overlayOp: 0
     }
   };
 
@@ -485,7 +514,7 @@
 
   /** themeById - a theme object from an id, falling back to the default. */
   function themeById(id) {
-    return THEMES[id] || THEMES.chocolate;
+    return THEMES[id] || THEMES.bubblegum;
   }
 
   /**
@@ -505,7 +534,7 @@
    */
   function styleVarsFor(st, t) {
     st = sanitizeStyle(st);
-    t = t || THEMES.chocolate;
+    t = t || THEMES.bubblegum;
     const accent = st.accent;
     const font = (FONTS.find((f) => f.id === st.font) || FONTS[0]).stack;
 
@@ -671,7 +700,7 @@
       profile: {
         title: "Username_01",
         bio: "All my work, in one place.",
-        theme: "chocolate",
+        theme: "bubblegum",
         layout: "list",
         style: {},
         socials: ["instagram", "tiktok", "youtube", "x"]
@@ -857,7 +886,7 @@
   }
 
   /* ---------- selectors ---------- */
-  const theme = () => THEMES[state.profile.theme] || THEMES.chocolate;
+  const theme = () => THEMES[state.profile.theme] || THEMES.bubblegum;
   const activeLinks = () => state.links.filter((l) => l.active);
   const socialLinks = () => state.links.filter((l) => l.kind === "social");
   const buttonLinks = () => state.links.filter((l) => l.kind !== "social");
@@ -1510,7 +1539,7 @@
       seoDescription: String(data.seoDescription || bio).replace(/\s+/g, " ").trim().slice(0, 160),
       hideBranding: data.hideBranding === true,
       avatar: safeAvatar(data.avatar),
-      theme: THEMES[data.theme] ? data.theme : "chocolate",
+      theme: THEMES[data.theme] ? data.theme : "bubblegum",
       layout: LAYOUTS.some((l) => l.id === data.layout) ? data.layout : "list",
       style: sanitizeStyle(data.style),
       socials: socials,
