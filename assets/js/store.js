@@ -927,8 +927,37 @@
   function updateUser(patch) { Object.assign(state.user, patch); commit(); }
   function updateProfile(patch) { Object.assign(state.profile, patch); commit(); }
   function updateSettings(patch) { Object.assign(state.settings, patch); commit(); }
-  function addContact(c) { state.contacts.unshift({ id: uid("cnt"), joined: today(), status: "subscribed", ...c }); commit(); }
-  function removeContact(id) { state.contacts = state.contacts.filter((c) => c.id !== id); commit(); }
+  async function addContact(c) {
+    const entry = { id: uid("cnt"), joined: today(), status: "subscribed", ...c };
+    state.contacts.unshift(entry);
+    commit();
+    // Mirror to the cloud so signups survive a device change. Fire and
+    // forget: the UI already shows the contact locally.
+    if (S.auth().cloud && Cloud && Cloud.isConfigured() && Cloud.saveContact) {
+      try {
+        const r = await Cloud.saveContact({
+          page_handle: state.user.handle || "",
+          name: entry.name,
+          email: entry.email,
+          source: entry.source || "Manual"
+        });
+        if (r.ok && r.id) {
+          // Replace the local uid with the cloud id so deletes match.
+          const found = state.contacts.find((x) => x.id === entry.id);
+          if (found) { found.id = r.id; commit(); }
+        }
+      } catch (e) { /* cloud sync failure does not break local UI */ }
+    }
+    return entry;
+  }
+  async function removeContact(id) {
+    const before = state.contacts.length;
+    state.contacts = state.contacts.filter((c) => c.id !== id);
+    commit();
+    if (state.contacts.length !== before && S.auth().cloud && Cloud && Cloud.isConfigured() && Cloud.deleteContact) {
+      try { await Cloud.deleteContact(id); } catch (e) { /* cloud sync failure */ }
+    }
+  }
   function addShortLink(slug, target) { state.shortLinks.unshift({ id: uid("sln"), slug, target, clicks: 0, created: today() }); commit(); }
   function addPost(p) { state.posts.push({ id: uid("pst"), status: "scheduled", ...p }); commit(); }
   function addRule(trigger, reply) { state.rules.push({ id: uid("rul"), trigger, reply, active: true }); commit(); }
@@ -1234,7 +1263,7 @@
    * Nothing from the previous local account survives case 3, which is
    * what stops one person's links appearing under another's handle.
    */
-  function adoptCloudUser(u, page) {
+  async function adoptCloudUser(u, page) {
     if (!u || !u.id) return { ok: false, error: "No user." };
     const prev = auth();
     const email = String(u.email || "");
@@ -1252,6 +1281,21 @@
         userId: u.id, email: email, cloud: true
       };
       commit();
+      // Refresh this device's contacts from the cloud copy.
+      try {
+        const cr = await Cloud.loadContacts();
+        if (cr.ok && Array.isArray(cr.contacts)) {
+          state.contacts = cr.contacts.map((c) => ({
+            id: c.id,
+            name: c.name || "",
+            email: c.email || "",
+            source: c.source || "",
+            joined: c.created_at || today(),
+            status: "subscribed"
+          }));
+          commit();
+        }
+      } catch (e) { /* cloud contact sync failure does not block signin */ }
       return { ok: true, returning: true, newAccount: false };
     }
 
@@ -1294,6 +1338,21 @@
         };
         state.ui = Object.assign({}, state.ui, { setup: null });
         commit();
+        // Restore this owner's captured signups from the cloud.
+        try {
+          const cr = await Cloud.loadContacts();
+          if (cr.ok && Array.isArray(cr.contacts)) {
+            state.contacts = cr.contacts.map((c) => ({
+              id: c.id,
+              name: c.name || "",
+              email: c.email || "",
+              source: c.source || "",
+              joined: c.created_at || today(),
+              status: "subscribed"
+            }));
+            commit();
+          }
+        } catch (e) { /* cloud contact sync failure does not block signin */ }
         return { ok: true, returning: true, newAccount: false, hydrated: true };
       }
     }

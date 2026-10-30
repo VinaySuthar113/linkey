@@ -52,25 +52,45 @@ ok("addpop: a click inside the dialog does not close it", /e\.target === backdro
 const closestList = (addpopSrc.match(/e\.target\.closest\("([^"]+)"\)/) || [])[1] || "";
 ok("addpop: the backdrop is no longer resolved with closest()", !!closestList && closestList.indexOf("overlay") === -1);
 
-/* Form tiles had no endpoint behind them: the visitor filled in a form that
-   went nowhere. The picker says so up front and the save path refuses it. */
+/* Forms now have a server behind them (Supabase contacts). Choosing a form
+   opens the details step, and saving creates a form tile. */
 const selectBlock = (addpopSrc.match(/function selectProvider\(id, prefillUrl\)[\s\S]*?\n  \}/) || [""])[0];
-ok("addpop: choosing a form says it is unavailable", /kind \|\| "link"\) === "form"/.test(selectBlock) && /not available in the beta/.test(selectBlock));
-ok("addpop: choosing a form does not open the details step", /kind \|\| "link"\) === "form"[\s\S]{0,300}?return;[\s\S]{0,40}?step = "details"/.test(selectBlock));
+ok("addpop: choosing a form opens the details step", /step = "details"/.test(selectBlock) && !/not available in the beta/.test(selectBlock));
 const saveBlock = (addpopSrc.match(/function save\(\)[\s\S]*?\n  \}/) || [""])[0];
-ok("addpop: saving a form is refused", /kind === "form"/.test(saveBlock) && /not available in the beta/.test(saveBlock));
-ok("addpop: a refused form is not added", saveBlock.indexOf("addLink") > saveBlock.indexOf("kind === \"form\""));
+ok("addpop: saving a form creates a block link", /kind === "text" \|\| kind === "header" \|\| kind === "form"/.test(saveBlock) && /addLink/.test(saveBlock));
+ok("addpop: a saved form is added before finish", saveBlock.indexOf("addLink") < saveBlock.indexOf("finishAdd"));
 
 const provSrc = fs.readFileSync(path.join(ROOT, "assets/js/providers.js"), "utf8");
 const formRows = provSrc.split("\n").filter((l) => l.indexOf('", "form", ') !== -1);
-eq("picker: every form row is marked unavailable", formRows.filter((l) => l.indexOf("Not available in the beta.") !== -1).length, formRows.length);
+eq("picker: every form row is honest about capture", formRows.filter((l) => l.indexOf("Not available in the beta.") === -1).length, formRows.length);
 ok("picker: the form rows were found", formRows.length >= 15);
+
+/* ---- forms (real capture via Supabase contacts) ----------------------- */
+ok("addpop: form tile creates a block link", /kind === "text" \|\| kind === "header" \|\| kind === "form"/.test(saveBlock));
+ok("addpop: form save calls addLink", /addLink/.test(saveBlock));
+
+/* ---- store: contacts sync to cloud ------------------------------------ */
+const storeSrc = fs.readFileSync(path.join(ROOT, "assets/js/store.js"), "utf8");
+ok("store: addContact is async and mirrors to cloud", /async function addContact\(c\)/.test(storeSrc) && /Cloud\.saveContact/.test(storeSrc));
+ok("store: removeContact deletes from cloud", /Cloud\.deleteContact/.test(storeSrc));
+ok("store: adoptCloudUser loads contacts", /Cloud\.loadContacts/.test(storeSrc));
+
+/* ---- pages: form links render as bio-form on public page -------------- */
+const pagesSrc = fs.readFileSync(path.join(ROOT, "assets/js/pages.js"), "utf8");
+ok("pages: isBlockLink includes form", /l\.kind === "form"/.test(pagesSrc));
+ok("pages: tileInner renders a bio-form", /data-bio-form/.test(pagesSrc) && /bio-form__submit/.test(pagesSrc));
 
 /* Deleting an account has to delete the published row, not just the copy in
    this browser — otherwise the page stays live and the owner can never take
    it down. The RLS owner-delete policy already allows it. */
 const cloudSrc = fs.readFileSync(path.join(ROOT, "assets/js/cloud.js"), "utf8");
 const appSrc = fs.readFileSync(path.join(ROOT, "assets/js/app.js"), "utf8");
+ok("cloud: captureContact is exported", /captureContact/.test(cloudSrc) && /captureContact,/.test(cloudSrc.slice(cloudSrc.indexOf("global.Cloud"))));
+const captureBlock = (cloudSrc.match(/async function captureContact\([\s\S]*?\n  \}/) || [""])[0];
+ok("cloud: captureContact POSTs to /rest/v1/contacts", /method: "POST"/.test(captureBlock) && /"\/rest\/v1\/contacts"/.test(captureBlock));
+ok("cloud: captureContact needs no token", !/token: token/.test(captureBlock));
+ok("app: handleBioForm handles bio-form submissions", /handleBioForm/.test(appSrc) && /dataset\.bioForm/.test(appSrc));
+ok("app: handleBioForm falls back to local contacts", /handleBioForm\(form\)[\s\S]{0,3000}S\.addContact/.test(appSrc));
 ok("cloud: deletePage is exported", /deletePage/.test(cloudSrc) && /deletePage,\s*$|deletePage,/.test(cloudSrc.slice(cloudSrc.indexOf("global.Cloud"))));
 const deleteBlock = (cloudSrc.match(/async function deletePage\(\)[\s\S]*?\n  \}/) || [""])[0];
 ok("cloud: deletePage sends a DELETE", /method: "DELETE"/.test(deleteBlock));
@@ -574,17 +594,18 @@ ok("intent: rejects a short name", !O.signUpIntent({ name: "A", email: "a@b.com"
 O.state.ui.pendingSignup.at = Date.now() - 31 * 60 * 1000;
 eq("intent: expires after 30 minutes", O.pendingSignup("ada@northwind.com"), null);
 
-/* ---- adoptCloudUser --------------------------------------------------- */
-const CLOUD_USER = {
-  id: "11111111-2222-3333-4444-555555555555",
-  email: "ada@northwind.com",
-  name: "Ada Chen",
-  avatar: "https://lh3.googleusercontent.com/a/ada",
-  provider: "google",
-  created: new Date().toISOString()
-};
+/* ---- adoptCloudUser (async now: it restores contacts from the cloud) ---- */
+(async () => {
+  const CLOUD_USER = {
+    id: "11111111-2222-3333-4444-555555555555",
+    email: "ada@northwind.com",
+    name: "Ada Chen",
+    avatar: "https://lh3.googleusercontent.com/a/ada",
+    provider: "google",
+    created: new Date().toISOString()
+  };
 
-let adopted = O.adoptCloudUser(CLOUD_USER, null);
+  let adopted = await O.adoptCloudUser(CLOUD_USER, null);
 ok("cloud: first sign-in is a new account", adopted.ok && adopted.newAccount === true);
 ok("cloud: new account is not onboarded", !O.isOnboarded());
 eq("cloud: new account has no links", O.state.links.length, 0);
@@ -597,7 +618,7 @@ ok("cloud: marked as a cloud session", O.state.auth.cloud === true);
 
 let done = O.completeSetup({ handle: "ada.chen", name: "Ada Chen", bio: "Type.", theme: "halo", platforms: ["instagram"], links: O.starterLinks(["instagram"], { instagram: "ada.chen" }, []) });
 ok("cloud: setup completes", done.ok, JSON.stringify(done));
-adopted = O.adoptCloudUser(CLOUD_USER, null);
+adopted = await O.adoptCloudUser(CLOUD_USER, null);
 ok("cloud: the same user is a returning sign-in", adopted.returning === true && adopted.newAccount === false);
 eq("cloud: returning keeps the page", O.state.user.handle, "ada.chen");
 eq("cloud: returning keeps the links", O.state.links.length, 1);
@@ -622,7 +643,7 @@ const pageRow = {
     ]
   }
 };
-const restored = D2.adoptCloudUser(CLOUD_USER, pageRow);
+const restored = await D2.adoptCloudUser(CLOUD_USER, pageRow);
 ok("cloud: a saved page hydrates", restored.hydrated === true, JSON.stringify(restored));
 ok("cloud: hydrated account is onboarded", D2.isOnboarded());
 eq("cloud: handle restored", D2.state.user.handle, "northwind");
@@ -636,10 +657,11 @@ eq("cloud: unknown platform dropped", D2.state.profile.platforms, ["instagram"])
 /* a reserved handle in a saved row cannot take over */
 const D3 = freshStore();
 const badRow = Object.assign({}, pageRow, { handle: "admin" });
-const rejected = D3.adoptCloudUser(CLOUD_USER, badRow);
+const rejected = await D3.adoptCloudUser(CLOUD_USER, badRow);
 ok("cloud: reserved handle is not restored", rejected.newAccount === true, JSON.stringify(rejected));
 ok("cloud: fallback handle is safe", D3.state.user.handle !== "admin");
-ok("cloud: no user is rejected", !D3.adoptCloudUser(null, null).ok);
+ok("cloud: no user is rejected", !(await D3.adoptCloudUser(null, null)).ok);
+})();
 
 /* ---- completeSetup ---------------------------------------------------- */
 const D4 = freshStore();
@@ -919,7 +941,15 @@ ok("planner: the week is computed, not hardcoded", plannerSrc.indexOf('"2026-10-
    is better than a promise the product cannot keep. */
 ok("planner: publishing is described honestly", /not available in the beta/.test(plannerHtml));
 ok("autoreply: delivery is described honestly", /not available in the beta/.test(bioSandbox.Pages.PAGES.autoreply()));
-ok("shortener: redirects are described honestly", /does not resolve yet/.test(bioSandbox.Pages.PAGES.shortener()));
+ok("shortener: redirects are described honestly", /redirect/.test(bioSandbox.Pages.PAGES.shortener()) && /\/s\/<slug>/.test(bioSandbox.Pages.PAGES.shortener()));
+
+/* ---- short-link redirects -------------------------------------------- */
+const appSrcShort = fs.readFileSync(path.join(ROOT, "assets/js/app.js"), "utf8");
+ok("short: parseHash detects s/<slug> routes", /indexOf\("s\/"\) === 0\) return \{ route: "short-redirect"/.test(appSrcShort));
+ok("short: guard allows short-redirect publicly", /if \(route === "short-redirect"\) return ""/.test(appSrcShort));
+ok("short: renderApp redirects to target", /location\.replace\(link\.target\)/.test(appSrcShort));
+ok("short: renderApp increments clicks", /link\.clicks = \(link\.clicks \|\| 0\) \+ 1/.test(appSrcShort));
+ok("short: renderApp shows not-found for missing slug", /Short link not found/.test(appSrcShort));
 const ideasHtml = bioSandbox.Pages.PAGES.ideas();
 ok("ideas: no dead refresh control", ideasHtml.indexOf('data-action="refresh-ideas"') === -1);
 ok("ideas: no invented engagement stat", ideasHtml.indexOf("2.3") === -1);

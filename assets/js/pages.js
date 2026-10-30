@@ -261,9 +261,9 @@
     return (S.LINK_TYPES[l.kind] || S.LINK_TYPES.link).icon;
   }
 
-  /** isBlockLink - text and header tiles are content, not destinations. */
+  /** isBlockLink - text, header and form tiles are content blocks, not destinations. */
   function isBlockLink(l) {
-    return !!l && (l.kind === "text" || l.kind === "header");
+    return !!l && (l.kind === "text" || l.kind === "header" || l.kind === "form");
   }
 
   /** shortDate - "2026-11-04" → "4 Nov 2026"; anything odd is shown as typed. */
@@ -311,6 +311,27 @@
   // in CSS instead, where it is a presentation choice.
   function tileInner(l, plan) {
     const big = plan.col * plan.row > 2;
+
+    // A form tile renders as a real signup form on the public page. The
+    // editor preview shows it as a static block; the live page wires up
+    // the submit handler globally (see bioPage form delegation).
+    if (l.kind === "form") {
+      const note = l.note ? '<p class="tile__form-note">' + esc(l.note) + "</p>" : "";
+      return (
+        '<span class="tile__text tile__text--block">' +
+          '<span class="tile__title tile__title--block">' + esc(l.title) + "</span>" +
+          note +
+          '<form class="bio-form" data-bio-form="' + esc(l.id) + '" novalidate>' +
+            '<input class="input bio-form__name" type="text" placeholder="Name" required>' +
+            '<input class="input bio-form__email" type="email" placeholder="Email" required>' +
+            '<button class="btn btn--dark btn--sm bio-form__submit" type="submit">' +
+            icon("send", 13) + " " + esc(tileNote(l, big) || "Subscribe") +
+            "</button>" +
+            '<span class="bio-form__msg"></span>' +
+          "</form>" +
+        "</span>"
+      );
+    }
 
     // Content blocks are their own line on the page: no glyph, no chevron.
     if (isBlockLink(l)) {
@@ -1113,8 +1134,8 @@
 
     return (
       '<div class="page">' +
-        '<div class="page-head"><div><h1>Link shortener</h1><p>Short links you can keep track of.</p></div></div>' +
-        '<p class="muted small" style="margin:-6px 0 16px">Links are saved to this account. Redirects need a custom domain, which the beta does not resolve yet — until then, use the destination URL itself.</p>' +
+        '<div class="page-head"><div><h1>Link shortener</h1><p>Short links that redirect to any destination.</p></div></div>' +
+        '<p class="muted small" style="margin:-6px 0 16px">Short links redirect within your page at <code>/s/<slug></code>. Clicks are counted so you can see which links get the most traffic.</p>' +
         '<div class="card" style="margin-bottom:16px"><div class="card__head"><div class="card__title">Create a short link</div></div>' +
           '<div class="row" style="gap:10px;flex-wrap:wrap">' +
             '<div class="field" style="flex:1;min-width:200px"><label>Destination URL</label><input class="input" id="f-short-target" placeholder="https://…"></div>' +

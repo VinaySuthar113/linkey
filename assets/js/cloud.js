@@ -518,6 +518,86 @@
     return { ok: true, taken: r.data === true };
   }
 
+  /* ---------------- contacts (form capture + owner list) ---------------- */
+
+  /**
+   * captureContact - a visitor signs up through a published page's form.
+   * No session token: the anon role may only INSERT, and the RLS policy
+   * requires the page_handle to belong to an onboarded page. Returns the
+   * new contact id on success.
+   */
+  async function captureContact(pageHandle, name, email, source) {
+    if (!configured) return { ok: false, code: "unconfigured" };
+    const h = String(pageHandle || "").trim().toLowerCase();
+    if (!/^[a-z0-9._-]{3,30}$/.test(h)) {
+      return { ok: false, code: "invalid-handle" };
+    }
+    const r = await request("/rest/v1/contacts", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: { page_handle: h, name: String(name || "").trim(), email: String(email || "").trim(), source: String(source || "").trim() }
+    });
+    if (!r.ok) return r;
+    return { ok: true, id: (Array.isArray(r.data) && r.data[0] && r.data[0].id) || null };
+  }
+
+  /**
+   * loadContacts - this owner's captured signups.
+   */
+  async function loadContacts() {
+    if (!configured) return { ok: false, code: "unconfigured", contacts: [] };
+    const token = await accessToken();
+    if (!token) return { ok: false, code: "no-session", contacts: [] };
+    const u = user();
+    if (!u || !u.id) return { ok: false, code: "no-user", contacts: [] };
+    const r = await request("/rest/v1/contacts", {
+      method: "GET",
+      token: token,
+      query: { user_id: "eq." + u.id, select: "id,name,email,source,created_at", order: "created_at.desc" }
+    });
+    if (!r.ok) return r;
+    return { ok: true, contacts: Array.isArray(r.data) ? r.data : [] };
+  }
+
+  /**
+   * saveContact - insert one contact for this owner (used when the owner
+   * adds a contact by hand in the Audience page).
+   */
+  async function saveContact(contact) {
+    if (!configured) return { ok: false, code: "unconfigured" };
+    const token = await accessToken();
+    if (!token) return { ok: false, code: "no-session" };
+    const u = user();
+    if (!u || !u.id) return { ok: false, code: "no-user" };
+    const r = await request("/rest/v1/contacts", {
+      method: "POST",
+      token: token,
+      headers: { Prefer: "return=representation" },
+      body: Object.assign({ user_id: u.id }, contact || {})
+    });
+    if (!r.ok) return r;
+    return { ok: true, id: (Array.isArray(r.data) && r.data[0] && r.data[0].id) || null };
+  }
+
+  /**
+   * deleteContact - remove one of this owner's captured contacts.
+   */
+  async function deleteContact(id) {
+    if (!configured) return { ok: false, code: "unconfigured" };
+    const token = await accessToken();
+    if (!token) return { ok: false, code: "no-session" };
+    const u = user();
+    if (!u || !u.id) return { ok: false, code: "no-user" };
+    const r = await request("/rest/v1/contacts", {
+      method: "DELETE",
+      token: token,
+      headers: { Prefer: "return=minimal" },
+      query: { id: "eq." + id, user_id: "eq." + u.id }
+    });
+    if (!r.ok) return r;
+    return { ok: true };
+  }
+
   /* ---------------- Google Identity Services (no server) ---------------- */
 
   /*
@@ -729,6 +809,7 @@
     signInWithOAuth, sendEmailLink, signOut,
     completeRedirect, parseRedirect, hasAuthParams, stripAuthParams, redirectTo, authorizeUrl,
     loadPage, savePage, loadPublicPage, handleTaken, deletePage,
+    captureContact, loadContacts, saveContact, deleteContact,
     googleConfigured, signInWithGoogle, mode, verifyGoogleProfile,
     // Exposed for tests only; not part of the app surface.
     _internals: { base64url, challengeFor, randomToken, urlAllowed, basePath, readJSON, writeJSON, STORE, VERIFIER, GCLIENT, USERINFO }

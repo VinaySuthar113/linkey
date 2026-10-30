@@ -65,10 +65,11 @@
   const AUTH_ROUTES = { login: 1, signup: 1, forgot: 1 };
   function parseHash() {
     const h = (location.hash || "").replace(/^#\/?/, "");
-    if (h && h.indexOf("u/") !== 0) return { route: h.split("?")[0] };
+    if (h && h.indexOf("u/") !== 0 && h.indexOf("s/") !== 0) return { route: h.split("?")[0] };
     const ph = pathHandle();
     if (ph) return { route: "bio", handle: ph };
     if (h.indexOf("u/") === 0) return { route: "bio", handle: safeHandle(h.slice(2)) };
+    if (h.indexOf("s/") === 0) return { route: "short-redirect", slug: h.slice(2) };
     return { route: "links" };
   }
   function navigate(route) {
@@ -121,6 +122,7 @@
    */
   function guard(route) {
     if (route === "bio") return "";
+    if (route === "short-redirect") return "";
     const inApp = S.isSignedIn();
     if (!inApp) return AUTH_ROUTES[route] ? "" : "login";
     if (AUTH_ROUTES[route]) return S.isOnboarded() ? "links" : "setup";
@@ -149,6 +151,22 @@
     const ctx = route === "bio" ? bioContext(parsed.handle) : null;
     const scroller = document.getElementById("scroller");
     const keep = lastRoute === route && scroller ? scroller.scrollTop : 0;
+
+    // Short-link redirect: look up the slug and bounce to the destination.
+    if (route === "short-redirect") {
+      const link = S.state.shortLinks.find((l) => l.slug === parsed.slug);
+      if (link) {
+        link.clicks = (link.clicks || 0) + 1;
+        S.commit();
+        location.replace(link.target);
+        return;
+      }
+      app.className = "app-root";
+      app.innerHTML = '<div class="page" style="max-width:600px;margin:48px auto"><div class="page-head"><div><h1>Short link not found</h1><p>That short link doesn’t exist (or was deleted).</p></div></div><p class="muted small">Create short links in the Link shortener.</p><a class="btn btn--dark" href="#/shortener">Go to Link shortener</a></div>';
+      document.title = "Short link not found — Linkey";
+      return;
+    }
+
     app.className = BARE[route] ? "" : "app-root";
     app.innerHTML = P.render(route, ctx);
     const next = document.getElementById("scroller");
@@ -165,6 +183,7 @@
     const route = parsed.route;
     const to = guard(route);
     if (to) { renderApp(); return; }
+    if (route === "short-redirect") { renderApp(); return; }
     const ctx = route === "bio" ? bioContext(parsed.handle) : null;
     const scroller = document.getElementById("scroller");
     const top = scroller ? scroller.scrollTop : 0;
@@ -955,7 +974,12 @@
     },
     "copy-short": (el) => {
       const l = S.state.shortLinks.find((x) => x.id === el.dataset.id);
-      if (l) copy("https://linkey.app/s/" + l.slug, "Short link copied");
+      if (l) {
+        const cfg = global.LINKEY_CONFIG || {};
+        const style = cfg.linkBase === "path" || cfg.linkBase === "hash" ? cfg.linkBase : (/\.github\.io$/i.test(location.hostname) ? "hash" : "path");
+        const base = location.origin + location.pathname.replace(/\/+$/, "");
+        copy(base + (style === "hash" ? "#/s/" : "/s/") + l.slug, "Short link copied");
+      }
     },
 
     "mark-read": () => { S.markNotificationsRead(); refresh(); toast("All caught up", { icon: "check" }); },
@@ -1291,7 +1315,78 @@
       e.preventDefault();
       submitSetup(form).catch(() => formError(form, "Something went wrong. Try again."));
     }
+    else if (form.dataset.bioForm) {
+      e.preventDefault();
+      handleBioForm(form);
+    }
   });
+
+  async function handleBioForm(form) {
+    // A visitor just signed up through a form on a public page. Capture it
+    // to the page owner's Supabase contacts, then confirm locally.
+    const linkEl = form.closest("[data-bio-link]");
+    const linkId = linkEl ? linkEl.dataset.bioLink : "";
+    const link = S.state.links.find((l) => l.id === linkId);
+    const handle = link ? (S.publicUrl() || "").replace(/\/+$/, "").split("/").pop() : "";
+
+    const nameEl = form.querySelector(".bio-form__name");
+    const emailEl = form.querySelector(".bio-form__email");
+    const msgEl = form.querySelector(".bio-form__msg");
+    const submitEl = form.querySelector(".bio-form__submit");
+
+    const name = String(nameEl ? nameEl.value : "").trim();
+    const email = String(emailEl ? emailEl.value : "").trim();
+    if (!name || !email) {
+      if (msgEl) msgEl.textContent = "Please fill in both fields.";
+      return;
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      if (msgEl) msgEl.textContent = "Enter a valid email address.";
+      return;
+    }
+
+    if (submitEl) { submitEl.disabled = true; submitEl.textContent = "Sending…"; }
+    if (msgEl) msgEl.textContent = "";
+
+    let ok = false;
+    if (Cloud && Cloud.isConfigured() && Cloud.captureContact) {
+      const r = await Cloud.captureContact(handle, name, email, link ? link.title : "Form");
+      ok = !!r.ok;
+      if (!ok) {
+        // Cloud capture failed (e.g. contacts table not applied yet). Fall back
+        // to local storage so the signup is never lost.
+        S.addContact({ name: name, email: email, source: link ? link.title : "Form" });
+        ok = true;
+        if (msgEl) msgEl.textContent = "Signup saved locally — cloud sync will catch up.";
+      }
+    } else {
+      // Local-only fallback: store the signup in this device's audience.
+      S.addContact({ name: name, email: email, source: link ? link.title : "Form" });
+      ok = true;
+      if (msgEl) msgEl.textContent = "Signup saved locally (cloud not configured).";
+    }
+
+    if (ok) {
+      form.reset();
+      if (msgEl) {
+        msgEl.style.color = "#16a34a";
+        msgEl.textContent = "Thanks, " + escHtml(name) + " — you're signed up.";
+      }
+      // Refresh the audience if the owner is looking at it.
+      if (parseHash().route === "audience") refresh();
+    }
+
+    if (submitEl) {
+      setTimeout(() => { submitEl.disabled = false; submitEl.textContent = tileNote(link || {}, false) || "Subscribe"; }, 2000);
+    }
+  }
+
+  function escHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
 
   /* ---------------- inputs ---------------- */
 
@@ -1516,7 +1611,7 @@
       if (r.user) {
         let page = null;
         try { page = await Cloud.loadPage(); } catch (e) { page = null; }
-        S.adoptCloudUser(r.user, page);
+        await S.adoptCloudUser(r.user, page);
       } else if (!S.auth().userId) {
         // A configured deployment never runs on the seeded demo session.
         S.signOut();

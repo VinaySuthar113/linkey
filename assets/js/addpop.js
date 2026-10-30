@@ -113,7 +113,7 @@
   function detailsBody() {
     const p = chosen;
     const kind = p.kind || "link";
-    const isBlock = kind === "text" || kind === "header";
+    const isBlock = kind === "text" || kind === "header" || kind === "form";
     const kindLabel = kind === "text" ? "text block" : kind === "header" ? "heading" : kind + " link";
 
     const extra =
@@ -126,9 +126,9 @@
           '<input class="input" id="addpop-date" type="date"></div>'
         : "") +
       (isBlock
-        ? '<div class="field"><label for="addpop-body">' + (kind === "header" ? "Heading" : "Text") + "</label>" +
+        ? '<div class="field"><label for="addpop-body">' + (kind === "header" ? "Heading" : kind === "form" ? "Sign-up form" : "Text") + "</label>" +
           '<textarea class="textarea" id="addpop-body" rows="3" maxlength="160" placeholder="' +
-          (kind === "header" ? "Work" : "A short note for your visitors…") + '"></textarea></div>'
+          (kind === "header" ? "Work" : kind === "form" ? "What should the form say? (e.g. Newsletter signup)" : "A short note for your visitors…") + '"></textarea></div>'
         : '<div class="field"><label for="addpop-note">Second line <span class="addpop__optional">optional</span></label>' +
           '<input class="input" id="addpop-note" maxlength="90" placeholder="' +
           (kind === "product" ? "Limited run" : kind === "event" ? "Berlin · 7pm" : kind === "form" ? "Subscribe" : "A short label") + '"></div>');
@@ -228,13 +228,6 @@
     } else {
       chosen = Object.assign({}, D.byId[id] || { id: "link", name: "Link", kind: "link" }, { prefill: prefillUrl || "" });
     }
-    // A form tile needs somewhere to store a signup. The beta has no endpoint,
-    // so opening its details step would end in a button that does nothing.
-    // Say it here, at the moment the choice is made.
-    if ((chosen.kind || "link") === "form") {
-      global.toast && global.toast("Forms are not available in the beta yet — they need a server to store signups.", { icon: "alert" });
-      return;
-    }
     step = "details";
     render();
   }
@@ -242,17 +235,9 @@
   function save() {
     const p = chosen;
     const kind = p.kind || "link";
-    const isBlock = kind === "text" || kind === "header";
+    const isBlock = kind === "text" || kind === "header" || kind === "form";
     const title = String((root.querySelector("#addpop-title") || {}).value || p.name).trim();
     const body = String((root.querySelector("#addpop-body") || {}).value || "").trim();
-
-    // A form tile needs somewhere to store a signup. There is no endpoint in
-    // the beta, so creating one would put a button on the page that silently
-    // does nothing. Refuse it and say why.
-    if (kind === "form") {
-      global.toast && global.toast("Forms are not available in the beta yet — they need a server to store signups.", { icon: "alert" });
-      return;
-    }
 
     if (isBlock) {
       if (body.length < 2) { global.toast && global.toast("Add some text first.", { icon: "alert" }); return; }
@@ -262,7 +247,7 @@
         kind: kind,
         provider: p.id,
         logo: p.logo || null,
-        note: String((root.querySelector("#addpop-note") || {}).value || "").trim().slice(0, 90)
+        note: title ? title.slice(0, 90) : String((root.querySelector("#addpop-note") || {}).value || "").trim().slice(0, 90)
       });
       finishAdd();
       return;

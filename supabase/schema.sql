@@ -145,6 +145,73 @@ grant select (handle, onboarded, data) on table public.pages to anon;
 
 grant select, insert, update, delete on table public.pages to authenticated;
 
+-- ------------------------------------------------------------- contacts --
+-- One row per signup captured from a published page's form. `user_id` is
+-- the page owner; anon may only insert (a visitor signing up), never read.
+-- The owner reads/deletes their own contacts via RLS.
+
+create table if not exists public.contacts (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references auth.users (id) on delete cascade,
+  page_handle text not null,
+  name       text not null default '',
+  email      text not null default '',
+  source     text not null default '',
+  created_at timestamptz not null default now()
+);
+
+comment on table  public.contacts is 'Signups captured from published Linkey pages.';
+comment on column public.contacts.user_id is 'The page owner who received the signup.';
+comment on column public.contacts.page_handle is 'The public address whose form captured this signup.';
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+     where conname = 'contacts_email_shape' and conrelid = 'public.contacts'::regclass
+  ) then
+    alter table public.contacts add constraint contacts_email_shape check (email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$') not valid;
+  end if;
+end
+$$;
+
+create index if not exists contacts_user_id_idx on public.contacts (user_id);
+create index if not exists contacts_page_handle_idx on public.contacts (page_handle);
+
+alter table public.contacts enable row level security;
+
+drop policy if exists contacts_owner_read   on public.contacts;
+drop policy if exists contacts_owner_delete on public.contacts;
+drop policy if exists contacts_anon_insert  on public.contacts;
+
+create policy contacts_owner_read on public.contacts
+  for select to authenticated
+  using (auth.uid() = user_id);
+
+create policy contacts_owner_delete on public.contacts
+  for delete to authenticated
+  using (auth.uid() = user_id);
+
+-- A visitor submitting a form on a published page may insert a contact.
+-- The page must exist and be onboarded; the owner is resolved from it.
+create policy contacts_anon_insert on public.contacts
+  for insert to anon
+  with check (
+    exists (
+      select 1 from public.pages
+      where handle = contacts.page_handle
+        and onboarded = true
+    )
+  );
+
+-- ------------------------------------------------------------- grants --
 -- Reflect the new table immediately in PostgREST instead of waiting for
 -- the schema cache to refresh on its own.
+
+revoke all on table public.contacts from anon, authenticated;
+grant usage on schema public to anon, authenticated;
+grant insert on table public.contacts to anon;
+grant select, insert, delete on table public.contacts to authenticated;
+
+notify pgrst, 'reload schema';
 notify pgrst, 'reload schema';

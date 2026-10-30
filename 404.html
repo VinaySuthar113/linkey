@@ -1,17 +1,16 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Linkey</title>
-    <script>
-      // GitHub Pages fallback: keeps /u/<handle> shareable by handing it to the SPA.
-      (function () {
-        var path = location.pathname;
-        var m = path.match(/\/u\/([^/?#]+)\/?$/);
-        var base = path.replace(/u\/[^/]+\/?$/, "");
-        location.replace(base + "index.html" + (m ? "#/u/" + m[1] : ""));
-      })();
-    </script>
-  </head>
-  <body></body>
-</html>
+<meta charset="utf-8">
+<title>Linkey — redirecting…</title>
+<meta http-equiv="refresh" content="0;url=#/">
+<script>
+  /* GitHub Pages serves 404.html for any unknown path. A short link like
+     /s/mypage lands here; we bounce it into the SPA hash route so the app
+     can resolve and redirect to the destination. */
+  (function () {
+    var m = location.pathname.match(/^\/s\/([a-zA-Z0-9_-]+)(\/.*)?$/);
+    if (m) {
+      location.replace(location.origin + location.pathname.replace(/\/s\/.*$/, "") + "#/s/" + m[1] + (location.search || ""));
+    }
+  })();
+</script>
