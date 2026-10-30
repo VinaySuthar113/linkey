@@ -17,6 +17,11 @@
     if (!m) return "";
     try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
   }
+  function pathShort() {
+    const m = location.pathname.match(/\/s\/([^/?#]+)\/?$/i);
+    if (!m) return "";
+    try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
+  }
   function publicLink() {
     return P.publicLink();
   }
@@ -68,6 +73,8 @@
     if (h && h.indexOf("u/") !== 0 && h.indexOf("s/") !== 0) return { route: h.split("?")[0] };
     const ph = pathHandle();
     if (ph) return { route: "bio", handle: ph };
+    const ps = pathShort();
+    if (ps) return { route: "short-redirect", slug: ps };
     if (h.indexOf("u/") === 0) return { route: "bio", handle: safeHandle(h.slice(2)) };
     if (h.indexOf("s/") === 0) return { route: "short-redirect", slug: h.slice(2) };
     return { route: "links" };
