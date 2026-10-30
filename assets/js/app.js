@@ -666,10 +666,13 @@
       refresh(); toast("Details saved", { icon: "check" });
     },
     "save-settings": () => {
-      S.updateSettings({
-        domain: val("f-setting-domain"), customDomain: val("f-setting-custom"),
-        seoTitle: val("f-setting-seotitle"), seoDescription: val("f-setting-seodesc")
-      });
+      // The page's address is derived from the username, not typed here, and
+      // custom domains are not live yet, so only the search copy is saved.
+      const title = val("f-setting-seotitle").slice(0, 70);
+      const desc = val("f-setting-seodesc").slice(0, 160);
+      if (title.length < 2) return toast("Add a page title", { icon: "alert" });
+      S.updateSettings({ seoTitle: title, seoDescription: desc });
+      refresh();
       toast("Settings saved", { icon: "check" });
     },
     "toggle-setting": (el) => {

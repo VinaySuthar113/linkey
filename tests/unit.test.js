@@ -948,6 +948,10 @@ ok("store: the dead analytics switch is gone", !("analytics" in D7.state.setting
 ok("store: the dead digest switch is gone", !("emailDigest" in D7.state.settings));
 ok("settings: no dead analytics toggle", settingsHtml.indexOf('data-key="analytics"') === -1);
 ok("settings: no dead digest toggle", settingsHtml.indexOf('data-key="emailDigest"') === -1);
+ok("settings: the address field is not editable", settingsHtml.indexOf('id="f-setting-domain"') === -1);
+ok("settings: the custom domain is clearly off", /id="f-setting-custom"[^>]*disabled/.test(settingsHtml) && /not live in the beta/.test(settingsHtml));
+ok("customize: no promise of a domain setting", customHtml.indexOf("Settings → Domain") === -1);
+ok("settings: saving does not wipe the domain field", !/f-setting-domain/.test(appSrc));
 
 /* Insight printed fixed growth chips ("12.4% vs last week", "4 new") for every
    account, whatever the numbers were. They come from the 14-day series now. */

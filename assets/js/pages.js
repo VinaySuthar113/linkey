@@ -780,7 +780,7 @@
                 '<div class="field"><label>Your address</label>' +
                   '<div class="row" style="gap:8px"><input class="input" id="f-public-link" value="' + esc(publicLink()) + '" readonly>' +
                   '<button class="btn btn--ghost btn--sm" data-action="copy-public" title="Copy">' + icon("copy", 14) + "</button></div>" +
-                  '<div class="muted small" style="margin-top:6px">Custom domains can be connected from Settings → Domain.</div>' +
+                  '<div class="muted small" style="margin-top:6px">This link is live as soon as you publish. Custom domains are not available in the beta.</div>' +
                 "</div>" +
                 '<div class="row" style="justify-content:flex-end"><button class="btn btn--dark btn--sm" data-action="save-seo">Save search info</button></div>' +
               "</div>" +
@@ -1221,8 +1221,8 @@
               "</div>" +
               '<div class="muted small" style="margin-top:6px">Anyone with this link sees your published page — no login needed.</div>' +
             "</div>" +
-            '<div class="field"><label>Linkey URL</label><input class="input" id="f-setting-domain" value="' + esc(s.settings.domain) + '"></div>' +
-            '<div class="field"><label>Custom domain</label><input class="input" id="f-setting-custom" placeholder="links.yourdomain.com" value="' + esc(s.settings.customDomain) + '"></div>' +
+            '<div class="field"><label>Custom domain</label><input class="input" id="f-setting-custom" placeholder="links.yourdomain.com" value="' + esc(s.settings.customDomain) + '" disabled>' +
+              '<div class="muted small" style="margin-top:4px">Custom domains are not live in the beta. Share the public link above — it works today.</div></div>' +
             '<div class="field"><label>SEO title</label><input class="input" id="f-setting-seotitle" value="' + esc(s.settings.seoTitle) + '"></div>' +
             '<div class="field"><label>SEO description</label><textarea class="textarea" id="f-setting-seodesc">' + esc(s.settings.seoDescription) + "</textarea></div>" +
             '<div><button class="btn btn--dark btn--sm" data-action="save-settings">Save changes</button></div>' +
