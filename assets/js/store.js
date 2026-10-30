@@ -424,6 +424,23 @@
   const STYLE_WEIGHTS = [400, 500, 600, 700, 800];
   const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
+  function base64Encode(str) {
+    if (typeof btoa === "function") return btoa(str);
+    // Manual base64 for environments without btoa (Node.js tests).
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let out = "";
+    for (let i = 0; i < str.length; i += 3) {
+      const b1 = str.charCodeAt(i);
+      const b2 = str.charCodeAt(i + 1);
+      const b3 = str.charCodeAt(i + 2);
+      out += chars[(b1 >> 2) & 63];
+      out += chars[((b1 & 3) << 4) | ((b2 !== undefined ? b2 : 0) >> 4)];
+      out += b2 !== undefined ? chars[((b2 & 15) << 2) | ((b3 !== undefined ? b3 : 0) >> 6)] : "=";
+      out += b3 !== undefined ? chars[b3 & 63] : "=";
+    }
+    return out;
+  }
+
   function hexToRgb(hex) {
     let h = String(hex || "").replace("#", "");
     if (h.length === 3) h = h.split("").map((c) => c + c).join("");
@@ -1707,7 +1724,7 @@
     platformById, onboardingUrl, extraLinkUrl, starterLinks, titleForUrl,
     sanitizeLink, sanitizeLinks, safeAvatar, cloudSnapshot, freshSetup,
     sanitizeStyle, style, setStyle, resetStyle, styleVars, styleVarsFor, themeById, publicView,
-    hexToRgb, luminance, pickText, rgba, shade,
+    base64Encode, hexToRgb, luminance, pickText, rgba, shade,
     get state() { return state; },
     subscribe, commit, reset, clearAccount, save,
     theme, activeLinks, socialLinks, buttonLinks, publicUrl,

@@ -266,6 +266,19 @@
     return !!l && (l.kind === "text" || l.kind === "header" || l.kind === "form");
   }
 
+  /** urlWithUtm - append UTM parameters to a link URL if they are set. */
+  function urlWithUtm(l) {
+    const safe = S.safeUrl(l.url);
+    if (!safe || safe === "#") return safe;
+    const params = [];
+    if (l.utmSource) params.push("utm_source=" + encodeURIComponent(l.utmSource));
+    if (l.utmMedium) params.push("utm_medium=" + encodeURIComponent(l.utmMedium));
+    if (l.utmCampaign) params.push("utm_campaign=" + encodeURIComponent(l.utmCampaign));
+    if (!params.length) return safe;
+    const sep = safe.indexOf("?") === -1 ? "?" : "&";
+    return safe + sep + params.join("&");
+  }
+
   /** shortDate - "2026-11-04" → "4 Nov 2026"; anything odd is shown as typed. */
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function shortDate(value) {
@@ -347,11 +360,13 @@
 
     const name = linkIconName(l);
     const note = tileNote(l, big);
+    const thumb = l.thumbnail ? '<img class="tile__thumb" src="' + esc(l.thumbnail) + '" alt="">' : "";
     return (
       '<span class="tile__glyph">' + icon(name, big ? 20 : 16) +
         (l.kind === "video" ? '<span class="tile__play">' + icon("play", 10) + "</span>" : "") +
       "</span>" +
       '<span class="tile__text">' +
+      thumb +
         '<span class="tile__title">' + esc(l.title) + "</span>" +
         (note ? '<span class="tile__note">' + esc(note) + "</span>" : "") +
       "</span>"
@@ -1185,6 +1200,7 @@
             '<div class="field"><label>Name</label><input class="input" id="f-user-name" value="' + esc(s.user.name) + '"></div>' +
             '<div class="field"><label>Username</label><input class="input" id="f-user-handle" value="' + esc(s.user.handle) + '">' +
               (s.user.handle ? '<div class="muted small" style="margin-top:4px">Your page lives at ' + esc(publicLink(s.user.handle)) + "</div>" : "") +
+              (s.user.handle ? '<div style="margin:8px 0"><img src="data:image/svg+xml;base64,' + S.base64Encode(typeof QR !== "undefined" && QR ? QR.encode(publicLink(s.user.handle), 120) : "") + '" alt="QR code" style="width:120px;height:120px;border:1px solid #e6e6e6;border-radius:8px"></div>' : "") +
             "</div>" +
             '<div class="field"><label>Email</label><input class="input" id="f-user-email" value="' + esc(s.user.email) + '"' +
               (s.auth && s.auth.cloud ? " readonly" : "") + ">" +
@@ -1239,6 +1255,7 @@
                 '<input class="input" id="f-public-link" readonly value="' + esc(S.publicUrl()) + '">' +
                 '<button class="btn btn--ghost btn--sm" data-action="copy-public" title="Copy link">' + icon("copy", 14) + " Copy</button>" +
                 '<button class="btn btn--ghost btn--sm" data-action="open-bio" title="Open public page">' + icon("external", 14) + "</button>" +
+                '<button class="btn btn--ghost btn--sm" data-action="qr-public" title="Download QR code">' + icon("qr", 14) + "</button>" +
               "</div>" +
               '<div class="muted small" style="margin-top:6px">Anyone with this link sees your published page — no login needed.</div>' +
             "</div>" +
@@ -1336,7 +1353,7 @@
                       tileInner(l, p) + "</div>";
                   }
                   return '<a class="' + cls + '" style="' + spanStyle(p) + '" href="' +
-                    esc(S.safeUrl(l.url)) + '" target="_blank" rel="noopener" data-bio-link="' + l.id + '">' +
+                    esc(urlWithUtm(l)) + '" target="_blank" rel="noopener" data-bio-link="' + l.id + '">' +
                     tileInner(l, p) + "</a>";
                 }).join("")
               : socials.length

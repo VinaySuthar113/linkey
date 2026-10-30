@@ -443,6 +443,12 @@
           '<div class="field"><label>' + (kind === "product" ? "Short note" : kind === "event" ? "Location or note" : "Second line") +
             '</label><input class="input" id="f-edit-note" maxlength="90" placeholder="' +
             (kind === "form" ? "Subscribe" : kind === "video" ? "Watch on YouTube" : "Optional") + '" value="' + S.esc(l.note || "") + '"></div>' +
+          (kind === "link" || kind === "product" || kind === "event"
+            ? '<div class="field"><label>UTM source</label><input class="input" id="f-edit-utmsource" placeholder="e.g. instagram" value="' + S.esc(l.utmSource || "") + '"></div>' +
+              '<div class="field"><label>UTM medium</label><input class="input" id="f-edit-utmmedium" placeholder="e.g. bio" value="' + S.esc(l.utmMedium || "") + '"></div>' +
+              '<div class="field"><label>UTM campaign</label><input class="input" id="f-edit-utmcampaign" placeholder="e.g. summer-sale" value="' + S.esc(l.utmCampaign || "") + '"></div>' +
+              '<div class="field"><label>Thumbnail image URL</label><input class="input" id="f-edit-thumbnail" placeholder="https://…" value="' + S.esc(l.thumbnail || "") + '"></div>'
+            : "") +
           '<div class="switch-row"><div><div class="switch-row__title">Visible on my page</div><div class="switch-row__sub">Turn off to hide without deleting.</div></div>' +
             '<button class="switch" role="switch" aria-checked="' + (l.active ? "true" : "false") + '" data-action="toggle-link" data-id="' + l.id + '"></button></div>',
         foot: '<button class="btn btn--danger btn--sm" data-action="delete-link" data-id="' + l.id + '">' + icon("trash", 14) + " Delete</button>" +
@@ -467,6 +473,19 @@
       }
       const note = val("f-edit-note").trim().slice(0, 90);
       patch.note = note || "";
+      // UTM parameters for tracking link clicks (appended at click time).
+      if (kind === "link" || kind === "product" || kind === "event") {
+        const us = val("f-edit-utmsource").trim();
+        const um = val("f-edit-utmmedium").trim();
+        const uc = val("f-edit-utmcampaign").trim();
+        if (us) patch.utmSource = us; else delete patch.utmSource;
+        if (um) patch.utmMedium = um; else delete patch.utmMedium;
+        if (uc) patch.utmCampaign = uc; else delete patch.utmCampaign;
+      }
+      if (kind === "link" || kind === "product" || kind === "event") {
+        const thumb = val("f-edit-thumbnail").trim();
+        if (thumb) patch.thumbnail = thumb; else delete patch.thumbnail;
+      }
       if (kind === "product") {
         const rawPrice = val("f-edit-price");
         if (rawPrice !== "") {
@@ -709,6 +728,20 @@
       toast((P.ROUTES[parseHash().route] || {}).title + " updated", { icon: "check" });
     },
     "copy-public": () => copy(publicLink(), "Public link copied"),
+    "qr-public": () => {
+      const svg = QR ? QR.encode(publicLink(), 400) : "";
+      if (!svg) return toast("QR code not available", { icon: "alert" });
+      const blob = new Blob([svg], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "linkey-qr-" + (S.state.user.handle || "page") + ".svg";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast("QR code downloaded", { icon: "qr" });
+    },
     "open-bio": () => { location.hash = "#/u/" + S.state.user.handle; },
     "growth-tools": () => {
       const tools = [
