@@ -856,6 +856,117 @@
     "</div>";
   }
 
+  /** overlayCard - background overlay opacity for the public page. */
+  function overlayCard(st) {
+    return '<div class="card" style="margin-bottom:16px">' +
+      '<div class="card__head"><div><div class="card__title">Overlay</div>' +
+        '<div class="card__sub">Darken the background for better text contrast.</div></div></div>' +
+      '<div class="style-groups">' +
+        styleGroup("overlay",
+          '<div class="range-row">' +
+            '<input class="range" type="range" min="0" max="80" step="5" value="' + st.overlay + '" data-style-input="overlay" aria-label="Overlay opacity" />' +
+            '<output class="range-out">' + st.overlay + "%</output>" +
+          "</div>") +
+      "</div>" +
+    "</div>";
+  }
+
+  /** weightCard - element weight options for buttons and links. */
+  function weightCard(st) {
+    const weights = [400, 500, 600, 700, 800];
+    return '<div class="card" style="margin-bottom:16px">' +
+      '<div class="card__head"><div><div class="card__title">Weight</div>' +
+        '<div class="card__sub">Font weight for buttons and text.</div></div></div>' +
+      '<div class="style-groups">' +
+        styleGroup("weight",
+          '<div class="opt-grid">' +
+            weights.map((w) =>
+              styleOpt("weight", String(w), String(w), st.weight === w)
+            ).join("") +
+          "</div>") +
+      "</div>" +
+    "</div>";
+  }
+
+  /** fillCard - fill options for links and buttons. */
+  function fillCard(st) {
+    const fills = [
+      { id: "theme", name: "Theme" },
+      { id: "solid", name: "Solid" },
+      { id: "soft", name: "Soft" },
+      { id: "outline", name: "Outline" },
+      { id: "glass", name: "Glass" }
+    ];
+    return '<div class="card" style="margin-bottom:16px">' +
+      '<div class="card__head"><div><div class="card__title">Fill</div>' +
+        '<div class="card__sub">How links and buttons are filled.</div></div></div>' +
+      '<div class="style-groups">' +
+        styleGroup("btnFill",
+          '<div class="opt-grid">' +
+            fills.map((f) =>
+              styleOpt("btnFill", f.id, f.name, st.btnFill === f.id)
+            ).join("") +
+          "</div>") +
+      "</div>" +
+    "</div>";
+  }
+
+  /** cardCard - card styling options for shop and collection cards. */
+  function cardCard(st) {
+    const radOpts = ["square", "rounded", "pill"];
+    return '<div class="card" style="margin-bottom:16px">' +
+      '<div class="card__head"><div><div class="card__title">Cards</div>' +
+        '<div class="card__sub">Styling for shop and collection cards.</div></div></div>' +
+      '<div class="style-groups">' +
+        styleGroup("shopRadius",
+          '<div class="opt-grid">' +
+            radOpts.map((r) => styleOpt("shopRadius", r, r.charAt(0).toUpperCase() + r.slice(1), st.shopRadius === r)).join("") +
+          "</div>") +
+        styleGroup("collectionRadius",
+          '<div class="opt-grid">' +
+            radOpts.map((r) => styleOpt("collectionRadius", r, r.charAt(0).toUpperCase() + r.slice(1), st.collectionRadius === r)).join("") +
+          "</div>") +
+        '<div class="style-group"><div class="style-group__label">Shop card border colour</div>' +
+          '<div class="swatches">' +
+            '<button type="button" class="swatch' + (st.shopBorder ? " is-on" : "") + '"' +
+              ' data-action="set-style" data-key="shopBorder" data-value="' + esc(st.shopBorder) + '"' +
+              ' style="background:' + (st.shopBorder || "#ffffff") + '" aria-label="Shop border ' + esc(st.shopBorder || "none") + '" aria-pressed="' + (st.shopBorder ? "true" : "false") + '"></button>' +
+            '<label class="swatch swatch--pick" title="Custom border colour">' +
+              '<input type="color" value="' + esc(st.shopBorder || "#000000") + '" data-style-input="shopBorder" aria-label="Shop border colour" />' +
+            "</label>" +
+          "</div></div>" +
+        '<div class="style-group"><div class="style-group__label">Collection card border colour</div>' +
+          '<div class="swatches">' +
+            '<button type="button" class="swatch' + (st.collectionBorder ? " is-on" : "") + '"' +
+              ' data-action="set-style" data-key="collectionBorder" data-value="' + esc(st.collectionBorder) + '"' +
+              ' style="background:' + (st.collectionBorder || "#ffffff") + '" aria-label="Collection border ' + esc(st.collectionBorder || "none") + '" aria-pressed="' + (st.collectionBorder ? "true" : "false") + '"></button>' +
+            '<label class="swatch swatch--pick" title="Custom border colour">' +
+              '<input type="color" value="' + esc(st.collectionBorder || "#000000") + '" data-style-input="collectionBorder" aria-label="Collection border colour" />' +
+            "</label>" +
+          "</div></div>" +
+      "</div>" +
+    "</div>";
+  }
+
+  /** tileCard - tile styling options for the public page. */
+  function tileCard(st) {
+    return '<div class="card" style="margin-bottom:16px">' +
+      '<div class="card__head"><div><div class="card__title">Tiles</div>' +
+        '<div class="card__sub">Tile border and spacing for link tiles.</div></div></div>' +
+      '<div class="style-groups">' +
+        '<div class="style-group"><div class="style-group__label">Link border</div>' +
+        '<div class="swatches">' +
+          '<button type="button" class="swatch' + (st.linkBorder ? " is-on" : "") + '"' +
+            ' data-action="set-style" data-key="linkBorder" data-value="' + esc(st.linkBorder) + '"' +
+            ' style="background:' + (st.linkBorder || "#ffffff") + '" aria-label="Link border ' + esc(st.linkBorder || "none") + '" aria-pressed="' + (st.linkBorder ? "true" : "false") + '"></button>' +
+          '<label class="swatch swatch--pick" title="Custom border colour">' +
+            '<input type="color" value="' + esc(st.linkBorder || "#000000") + '" data-style-input="linkBorder" aria-label="Link border colour" />' +
+          "</label>" +
+        "</div></div>" +
+      "</div>" +
+    "</div>";
+  }
+
   function customizePage() {
     const s = S.state;
     const st = S.style();
@@ -893,8 +1004,13 @@
 
             typographyCard(st) +
             coloursCard(st) +
+            overlayCard(st) +
             buttonsCard(st) +
+            weightCard(st) +
+            fillCard(st) +
             bordersCard(st) +
+            cardCard(st) +
+            tileCard(st) +
             headingCard(st) +
             bgImageCard(st) +
             '<div class="card" style="margin-bottom:16px">' +
