@@ -1,8 +1,8 @@
-/* ============================================================
-   Linkey — design tokens
+﻿/* ============================================================
+   Linkey â€” design tokens
    Palette from the Figma file: #FFFFFF #F4F4F4 #FF5000 #FBC02D #1F1F1F
-   Shell: 250 sidebar · 70 topbar · 650 links column · 350 preview rail
-   Type: Rubik (self-hosted variable, 300–700) — matches the Figma file
+   Shell: 250 sidebar Â· 70 topbar Â· 650 links column Â· 350 preview rail
+   Type: Rubik (self-hosted variable, 300â€“700) â€” matches the Figma file
    ============================================================ */
 @font-face {
   font-family: "Rubik";
@@ -60,6 +60,14 @@
   --radius-lg: 16px;
   --radius-xl: 24px;
   --radius-pill: 999px;
+  --p-btn-border-color: transparent;
+  --p-btn-border-width: 1px;
+  --p-link-border-color: transparent;
+  --p-profile-border-color: transparent;
+  --p-shop-border-color: transparent;
+  --p-collection-border-color: transparent;
+  --p-bg-image: none;
+  --p-bg-image-mode: cover;
 
   --sidebar-w: 250px;
   --topbar-h: 70px;
@@ -453,7 +461,6 @@ img { display: block; max-width: 100%; }
   border-radius: 5px; overflow: hidden;
   display: flex; flex-direction: column; align-items: center;
   padding: 55px 14px 24px; text-align: center;
-  background: var(--p-bg, #6b3f27); color: var(--p-fg, #f7efe6);
   transition: background 0.3s var(--ease), color 0.3s var(--ease);
   box-shadow: 0 18px 40px rgba(63, 32, 12, 0.16);
   font-family: var(--p-font, inherit);
@@ -484,7 +491,7 @@ img { display: block; max-width: 100%; }
 .phone__avatar {
   width: 62px; height: 62px; border-radius: var(--p-avatar-radius, 50%); overflow: hidden;
   background: rgba(255, 255, 255, 0.16); display: grid; place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid var(--p-profile-border-color, rgba(255, 255, 255, 0.22));
   position: relative; z-index: 1; font-size: 12px; font-weight: 700;
   color: rgba(255, 255, 255, 0.82);
 }
@@ -495,10 +502,10 @@ img { display: block; max-width: 100%; }
 .phone__links { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 23px; position: relative; z-index: 1; }
 .phone__link {
   display: flex; align-items: center; justify-content: center;
-  min-height: calc(var(--p-minh, 50px) * 0.62); padding: 0 10px; border-radius: calc(var(--p-radius, 12px) * 0.55);
+  min-height: calc(var(--p-minh, 50px) * 0.62); padding: 0 10px; border-radius: calc(var(--p-link-radius, var(--p-radius, 12px)) * 0.55);
   font-size: calc(var(--p-size, 14px) * 0.68); font-weight: var(--p-weight, 600); letter-spacing: 0.01em;
   background: var(--p-btn, #f7f1dc);
-  border: 1px solid var(--p-btn-border, transparent);
+  border: var(--p-btn-border-width, 1px) solid var(--p-btn-border-color, var(--p-btn-border, transparent));
   color: var(--p-btn-fg, #3b2415);
   box-shadow: var(--p-shadow, none);
   transition: transform 0.14s var(--ease), background 0.2s var(--ease), opacity 0.2s var(--ease);
@@ -690,10 +697,9 @@ img { display: block; max-width: 100%; }
 @keyframes toastIn { from { opacity: 0; transform: translateY(8px) } }
 
 /* public bio page */
-.bio-page { min-height: 100dvh; background: var(--p-bg); color: var(--p-fg); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px 40px; transition: background .3s var(--ease); position: relative;
   font-family: var(--p-font, inherit); }
 .bio-page::before { content: ""; position: absolute; inset: 0; background-image: var(--p-tex, none); background-size: 240px 240px; opacity: .28; mix-blend-mode: overlay; pointer-events: none; }
-/* Darken layer from Customize → Colours. Sits under the content (z-index 1+). */
+/* Darken layer from Customize â†’ Colours. Sits under the content (z-index 1+). */
 .bio-page::after { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, var(--p-overlay, 0)); pointer-events: none; z-index: 0; }
 .bio-page[data-align="left"] .bio-page__inner { align-items: flex-start; text-align: left; }
 .bio-page[data-align="left"] .bio-page__socials { justify-content: flex-start; }
@@ -703,7 +709,7 @@ img { display: block; max-width: 100%; }
 .bio-page__bio { font-size: calc(var(--p-size, 14px) - 1px); opacity: .8; margin-top: 6px; }
 .bio-page__socials { display: flex; gap: 14px; margin-top: 14px; opacity: .9; }
 .bio-page__links { width: 100%; display: flex; flex-direction: column; gap: 12px; margin-top: 26px; }
-.bio-link { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--p-minh, 50px); padding: var(--p-pad, 12px 16px); border-radius: var(--p-radius, 12px); font-size: var(--p-size, 13px); font-weight: var(--p-weight, 600); background: var(--p-btn); border: 1px solid var(--p-btn-border); color: var(--p-btn-fg); box-shadow: var(--p-shadow, none); transition: transform .14s var(--ease), background .2s var(--ease); }
+.bio-link { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--p-minh, 50px); padding: var(--p-pad, 12px 16px); border-radius: var(--p-link-radius, var(--p-radius, 12px)); font-size: var(--p-size, 13px); font-weight: var(--p-weight, 600); background: var(--p-btn); border: 1px solid var(--p-btn-border); color: var(--p-btn-fg); box-shadow: var(--p-shadow, none); transition: transform .14s var(--ease), background .2s var(--ease); }
 .bio-link:hover { transform: translateY(-1px); background: var(--p-btn-hover); }
 .bio-page[data-align="left"] .bio-link { justify-content: flex-start; }
 .bio-page[data-tex="1"][data-shape="rounded"] .bio-link { filter: url(#torn); }
@@ -712,7 +718,7 @@ img { display: block; max-width: 100%; }
   display: inline-block; width: auto; aspect-ratio: 496 / 597.836;
   background: currentColor; flex: 0 0 auto;
   /* Path is relative to this stylesheet. The mark itself lives at
-     assets/brand/logo.svg — swap that file to rebrand. */
+     assets/brand/logo.svg â€” swap that file to rebrand. */
   -webkit-mask: url("../brand/logo.svg") center / contain no-repeat;
   mask: url("../brand/logo.svg") center / contain no-repeat;
 }
@@ -812,7 +818,7 @@ img { display: block; max-width: 100%; }
 .phone__links[data-layout="custom"] .phone__link { justify-content: center; padding: 0; }
 .phone__links[data-layout="bento"] .tile__text,
 .phone__links[data-layout="custom"] .tile__text { display: none; }
-/* …except a content block, whose text is the whole point of the tile. */
+/* â€¦except a content block, whose text is the whole point of the tile. */
 .phone__links[data-layout="bento"] .phone__link--block,
 .phone__links[data-layout="custom"] .phone__link--block { justify-content: flex-start; padding: 4px 5px; }
 .phone__links[data-layout="bento"] .phone__link--block .tile__text,
@@ -1147,7 +1153,7 @@ img { display: block; max-width: 100%; }
 .addpop__preview-chev { margin-left: auto; color: rgba(33, 33, 33, 0.25); display: flex; }
 
 /* ============================================================
-   Auth — Log in / Sign up / Forgot
+   Auth â€” Log in / Sign up / Forgot
    Measured from the design's "Login/Sign Up" frame (86083):
    1440 x 1024 white; a 418px column starting at x=146; a 710px
    art pane on #F4F4F4. The art is two of the design's images at
@@ -1267,8 +1273,8 @@ img { display: block; max-width: 100%; }
 }
 
 /* ============================================================
-   Setup — five steps between sign-up and a live page
-   Copy and order from the design's Get_Started_1…5 frames.
+   Setup â€” five steps between sign-up and a live page
+   Copy and order from the design's Get_Started_1â€¦5 frames.
    ============================================================ */
 .setup { min-height: 100dvh; background: #f6f5f2; display: flex; flex-direction: column; padding-bottom: 32px; }
 .setup__head {

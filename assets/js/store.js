@@ -412,7 +412,23 @@
     btnShape: "rounded",
     btnShadow: "none",
     btnSize: "regular",
-    avatar: "circle"
+    avatar: "circle",
+    btnRadius: "rounded",
+    btnBorder: "",
+    btnBorderWidth: 1,
+    linkRadius: "rounded",
+    linkBorder: "",
+    profileRadius: "circle",
+    profileBorder: "",
+    headingFont: "",
+    headingWeight: "",
+    headingSize: "",
+    shopRadius: "rounded",
+    shopBorder: "",
+    collectionRadius: "rounded",
+    collectionBorder: "",
+    bgImage: "",
+    bgImageMode: "cover"
   };
 
   const BTN_FILLS = ["theme", "solid", "soft", "outline", "glass"];
@@ -420,9 +436,11 @@
   const BTN_SHADOWS = ["none", "soft", "strong"];
   const BTN_SIZES = ["compact", "regular", "large"];
   const AVATAR_SHAPES = ["circle", "squircle", "square"];
+  const RADIUS_CHOICES = ["square", "rounded", "pill"];
   const STYLE_SIZES = { min: 12, max: 20 };
   const STYLE_WEIGHTS = [400, 500, 600, 700, 800];
   const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+  const URL_OR_EMPTY = /^(https?:\/\/[^\s"<>]+|)$/i;
 
   function base64Encode(str) {
     if (typeof btoa === "function") return btoa(str);
@@ -506,7 +524,23 @@
       btnShape: pick("btnShape", BTN_SHAPES, STYLE_DEFAULTS.btnShape),
       btnShadow: pick("btnShadow", BTN_SHADOWS, STYLE_DEFAULTS.btnShadow),
       btnSize: pick("btnSize", BTN_SIZES, STYLE_DEFAULTS.btnSize),
-      avatar: pick("avatar", AVATAR_SHAPES, STYLE_DEFAULTS.avatar)
+      avatar: pick("avatar", AVATAR_SHAPES, STYLE_DEFAULTS.avatar),
+      btnRadius: pick("btnRadius", RADIUS_CHOICES, STYLE_DEFAULTS.btnRadius),
+      btnBorder: hexOr(r.btnBorder, ""),
+      btnBorderWidth: Math.round(clamp(Number(r.btnBorderWidth) || STYLE_DEFAULTS.btnBorderWidth, 0, 6)),
+      linkRadius: pick("linkRadius", RADIUS_CHOICES, STYLE_DEFAULTS.linkRadius),
+      linkBorder: hexOr(r.linkBorder, ""),
+      profileRadius: pick("profileRadius", AVATAR_SHAPES, STYLE_DEFAULTS.profileRadius),
+      profileBorder: hexOr(r.profileBorder, ""),
+      headingFont: (FONTS.find((f) => f.id === r.headingFont)) ? r.headingFont : "",
+      headingWeight: STYLE_WEIGHTS.indexOf(Number(r.headingWeight)) >= 0 ? Number(r.headingWeight) : "",
+      headingSize: (r.headingSize != null && String(r.headingSize).trim() !== "") ? Math.round(clamp(Number(r.headingSize), STYLE_SIZES.min, STYLE_SIZES.max)) : "",
+      shopRadius: pick("shopRadius", RADIUS_CHOICES, STYLE_DEFAULTS.shopRadius),
+      shopBorder: hexOr(r.shopBorder, ""),
+      collectionRadius: pick("collectionRadius", RADIUS_CHOICES, STYLE_DEFAULTS.collectionRadius),
+      collectionBorder: hexOr(r.collectionBorder, ""),
+      bgImage: URL_OR_EMPTY.test(String(r.bgImage || "")) ? String(r.bgImage || "") : "",
+      bgImageMode: pick("bgImageMode", ["cover", "contain", "auto"], STYLE_DEFAULTS.bgImageMode)
     };
   }
 
@@ -527,6 +561,47 @@
     if (state.profile) delete state.profile.style;
     commit();
     return style();
+  }
+
+  /** saveCustomTheme - save the current style as a named custom theme. */
+  function saveCustomTheme(name) {
+    if (!state.profile) return { ok: false, error: "No profile" };
+    const nameTrim = String(name || "").trim().slice(0, 40);
+    if (!nameTrim) return { ok: false, error: "Name required" };
+    const ct = {
+      id: uid("ct"),
+      name: nameTrim,
+      style: Object.assign({}, state.profile.style || {}),
+      created: Date.now()
+    };
+    if (!state.profile.customThemes) state.profile.customThemes = [];
+    state.profile.customThemes.push(ct);
+    commit();
+    return { ok: true, theme: ct };
+  }
+
+  /** deleteCustomTheme - remove a custom theme by id. */
+  function deleteCustomTheme(id) {
+    if (!state.profile || !state.profile.customThemes) return { ok: false, error: "No themes" };
+    const before = state.profile.customThemes.length;
+    state.profile.customThemes = state.profile.customThemes.filter((t) => t.id !== id);
+    if (state.profile.customThemes.length !== before) {
+      commit();
+      return { ok: true };
+    }
+    return { ok: false, error: "Theme not found" };
+  }
+
+  /** getCustomThemes - return all custom themes for this profile. */
+  function getCustomThemes() {
+    return state.profile && state.profile.customThemes ? state.profile.customThemes : [];
+  }
+
+  /** applyCustomTheme - apply a saved custom theme as the current style. */
+  function applyCustomTheme(id) {
+    const ct = (state.profile && state.profile.customThemes || []).find((t) => t.id === id);
+    if (!ct) return { ok: false, error: "Theme not found" };
+    return setStyle(ct.style);
   }
 
   /** themeById - a theme object from an id, falling back to the default. */
@@ -594,6 +669,22 @@
       square: "10%"
     }[st.avatar];
 
+    const hFont = st.headingFont ? (FONTS.find((f) => f.id === st.headingFont) || FONTS[0]).stack : font;
+    const hSize = st.headingSize ? Math.round(clamp(Number(st.headingSize), STYLE_SIZES.min, STYLE_SIZES.max)) : sizing.size;
+    const hWeight = STYLE_WEIGHTS.indexOf(Number(st.headingWeight)) >= 0 ? st.headingWeight : st.weight;
+    const rad = { square: "4px", rounded: "14px", pill: "999px" };
+    const btnRadiusVal = rad[st.btnRadius] || rad.rounded;
+    const linkRadiusVal = rad[st.linkRadius] || rad.rounded;
+    const shopRadiusVal = rad[st.shopRadius] || rad.rounded;
+    const collectionRadiusVal = rad[st.collectionRadius] || rad.rounded;
+    const profileRadiusVal = {
+      circle: "50%",
+      squircle: "28%",
+      square: "10%"
+    }[st.profileRadius] || "50%";
+
+    const bgImageCss = st.bgImage ? "url(" + st.bgImage + ")" : "none";
+
     return [
       "--p-bg:" + bg,
       "--p-fg:" + ink,
@@ -612,7 +703,23 @@
       "--p-align:" + st.align,
       "--p-avatar-radius:" + avatar,
       "--p-overlay:" + (st.overlay / 100),
-      "--p-tex:" + (t.tex ? "1" : "0")
+      "--p-tex:" + (t.tex ? "1" : "0"),
+      "--p-btn-radius:" + btnRadiusVal,
+      "--p-link-radius:" + linkRadiusVal,
+      "--p-shop-radius:" + shopRadiusVal,
+      "--p-collection-radius:" + collectionRadiusVal,
+      "--p-profile-radius:" + profileRadiusVal,
+      "--p-btn-border-color:" + (st.btnBorder || "transparent"),
+      "--p-btn-border-width:" + st.btnBorderWidth + "px",
+      "--p-link-border-color:" + (st.linkBorder || "transparent"),
+      "--p-profile-border-color:" + (st.profileBorder || "transparent"),
+      "--p-shop-border-color:" + (st.shopBorder || "transparent"),
+      "--p-collection-border-color:" + (st.collectionBorder || "transparent"),
+      "--p-heading-font:" + hFont,
+      "--p-heading-weight:" + hWeight,
+      "--p-heading-size:" + hSize + "px",
+      "--p-bg-image:" + bgImageCss,
+      "--p-bg-image-mode:" + st.bgImageMode
     ].join(";");
   }
 
@@ -830,7 +937,8 @@
     s.user = { name: "", handle: "", email: "", tagline: "", avatar: "" };
     s.profile = {
       title: "", bio: "", theme: s.profile.theme, layout: "list",
-      style: {}, socials: [], goal: "", platforms: []
+      style: {}, socials: [], goal: "", platforms: [],
+      customThemes: []
     };
     s.links = [];
     s.collections = [];
@@ -1720,7 +1828,7 @@
     HANDLE_MIN, HANDLE_MAX, RESERVED_HANDLES,
     ONBOARD_GOALS, ONBOARD_PLATFORMS, MAX_PLATFORMS, MAX_EXTRA_LINKS,
     FONTS, GRADIENTS, STYLE_DEFAULTS, BTN_FILLS, BTN_SHAPES, BTN_SHADOWS,
-    BTN_SIZES, AVATAR_SHAPES, STYLE_WEIGHTS,
+    BTN_SIZES, AVATAR_SHAPES, RADIUS_CHOICES, STYLE_WEIGHTS,
     platformById, onboardingUrl, extraLinkUrl, starterLinks, titleForUrl,
     sanitizeLink, sanitizeLinks, safeAvatar, cloudSnapshot, freshSetup,
     sanitizeStyle, style, setStyle, resetStyle, styleVars, styleVarsFor, themeById, publicView,
@@ -1737,6 +1845,7 @@
     addLink, updateLink, deleteLink, moveLink, toggleLink,
     addCollection, addProduct,
     setTheme, updateUser, updateProfile, updateSettings,
+    saveCustomTheme, deleteCustomTheme, getCustomThemes, applyCustomTheme,
     addContact, removeContact, addShortLink, addPost, addRule, toggleRule,
     markNotificationsRead, unreadCount,
     uid, fmtNum, money, esc, safeUrl, hostOf, initials, today

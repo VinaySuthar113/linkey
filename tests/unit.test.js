@@ -1425,7 +1425,81 @@ ok("vars: square avatar", av.styleVars().indexOf("--p-avatar-radius:10%") !== -1
 av.setStyle({ overlay: 40 });
 ok("vars: overlay is a fraction", av.styleVars().indexOf("--p-overlay:0.4") !== -1);
 
-/* the public page and the preview read the same vars */
+/* ---- new style properties ---------------------------------------------- */
+av.setStyle({ btnRadius: "pill" });
+ok("vars: button radius pill", av.styleVars().indexOf("--p-btn-radius:999px") !== -1);
+av.setStyle({ btnRadius: "square" });
+ok("vars: button radius square", av.styleVars().indexOf("--p-btn-radius:4px") !== -1);
+
+av.setStyle({ btnBorder: "#ff5000", btnBorderWidth: 3 });
+ok("vars: button border color", av.styleVars().indexOf("--p-btn-border-color:#ff5000") !== -1);
+ok("vars: button border width", av.styleVars().indexOf("--p-btn-border-width:3px") !== -1);
+
+av.setStyle({ linkRadius: "square" });
+ok("vars: link radius square", av.styleVars().indexOf("--p-link-radius:4px") !== -1);
+av.setStyle({ linkRadius: "pill" });
+ok("vars: link radius pill", av.styleVars().indexOf("--p-link-radius:999px") !== -1);
+
+av.setStyle({ profileRadius: "squircle", profileBorder: "#ff5000" });
+ok("vars: profile radius squircle", av.styleVars().indexOf("--p-profile-radius:28%") !== -1);
+ok("vars: profile border color", av.styleVars().indexOf("--p-profile-border-color:#ff5000") !== -1);
+
+av.setStyle({ headingFont: "editorial", headingWeight: 800, headingSize: 20 });
+ok("vars: heading font", av.styleVars().indexOf("--p-heading-font:") !== -1 && av.styleVars().indexOf("Georgia") !== -1);
+ok("vars: heading weight", av.styleVars().indexOf("--p-heading-weight:800") !== -1);
+ok("vars: heading size", av.styleVars().indexOf("--p-heading-size:20px") !== -1);
+
+av.setStyle({ shopRadius: "pill", shopBorder: "#ff5000" });
+ok("vars: shop radius pill", av.styleVars().indexOf("--p-shop-radius:999px") !== -1);
+ok("vars: shop border color", av.styleVars().indexOf("--p-shop-border-color:#ff5000") !== -1);
+
+av.setStyle({ collectionRadius: "square", collectionBorder: "#1f1f1f" });
+ok("vars: collection radius square", av.styleVars().indexOf("--p-collection-radius:4px") !== -1);
+ok("vars: collection border color", av.styleVars().indexOf("--p-collection-border-color:#1f1f1f") !== -1);
+
+av.setStyle({ bgImage: "https://example.com/bg.jpg", bgImageMode: "contain" });
+ok("vars: background image", av.styleVars().indexOf("--p-bg-image:url(https://example.com/bg.jpg)") !== -1);
+ok("vars: background image mode", av.styleVars().indexOf("--p-bg-image-mode:contain") !== -1);
+
+/* bgImage rejects unsafe URLs */
+av.setStyle({ bgImage: "javascript:alert(1)" });
+ok("vars: background image rejects javascript", av.styleVars().indexOf("--p-bg-image:none") !== -1);
+
+av.setStyle({ bgImage: "" });
+ok("vars: background image cleared", av.styleVars().indexOf("--p-bg-image:none") !== -1);
+
+/* ---- custom theme save/load -------------------------------------------- */
+av.setStyle({ accent: "#ff5000", btnShape: "pill", headingFont: "editorial" });
+const ct1 = av.saveCustomTheme("My Theme");
+ok("custom theme: save returns theme", ct1.ok && ct1.theme.name === "My Theme");
+ok("custom theme: theme has id", !!ct1.theme.id);
+ok("custom theme: theme has style", !!ct1.theme.style);
+ok("custom theme: theme has created", !!ct1.theme.created);
+
+const themes = av.getCustomThemes();
+ok("custom theme: getCustomThemes returns array", Array.isArray(themes));
+ok("custom theme: theme is in list", themes.some((t) => t.id === ct1.theme.id));
+
+av.setStyle({ accent: "#00ff00" });
+ok("custom theme: current style changed", av.style().accent === "#00ff00");
+av.applyCustomTheme(ct1.theme.id);
+ok("custom theme: apply restores style", av.style().accent === "#ff5000");
+ok("custom theme: apply restores btnShape", av.style().btnShape === "pill");
+
+const ct2 = av.saveCustomTheme("Second Theme");
+ok("custom theme: second theme saved", ct2.ok);
+ok("custom theme: two themes", av.getCustomThemes().length === 2);
+
+ok("custom theme: delete works", av.deleteCustomTheme(ct1.theme.id).ok);
+ok("custom theme: one remains", av.getCustomThemes().length === 1);
+ok("custom theme: deleted theme gone", !av.getCustomThemes().some((t) => t.id === ct1.theme.id));
+ok("custom theme: delete missing returns false", !av.deleteCustomTheme("nonexistent").ok);
+
+/* custom theme name validation */
+ok("custom theme: empty name rejected", !av.saveCustomTheme("").ok);
+ok("custom theme: whitespace name rejected", !av.saveCustomTheme("   ").ok);
+
+/* ---- public page and the preview read the same vars */
 const sameVars = storeWithLocal().S;
 sameVars.setStyle({ accent: "#123456", btnShape: "pill", font: "mono", bg: "solid", bgColor: "#000" });
 const sharedVars = sameVars.styleVars();

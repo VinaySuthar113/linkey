@@ -672,6 +672,25 @@
       refresh();
       toast("Style reset to the theme", { icon: "arrowLeft" });
     },
+    "save-custom-theme": () => {
+      const name = val("f-theme-name");
+      const r = S.saveCustomTheme(name);
+      if (!r.ok) return toast(r.error, { icon: "alert" });
+      refresh();
+      toast("Theme \"" + r.theme.name + "\" saved", { icon: "palette" });
+    },
+    "apply-custom-theme": (el) => {
+      const r = S.applyCustomTheme(el.dataset.themeId);
+      if (!r.ok) return toast(r.error, { icon: "alert" });
+      refresh();
+      toast("Theme applied", { icon: "palette" });
+    },
+    "delete-custom-theme": (el) => {
+      const r = S.deleteCustomTheme(el.dataset.themeId);
+      if (!r.ok) return toast(r.error, { icon: "alert" });
+      refresh();
+      toast("Theme deleted", { icon: "trash" });
+    },
     "save-seo": () => {
       const title = val("f-seo-title").slice(0, 70);
       const desc = val("f-seo-desc").slice(0, 160);

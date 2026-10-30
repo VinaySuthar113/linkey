@@ -612,7 +612,18 @@
     btnShape: "Button shape",
     btnShadow: "Shadow",
     btnSize: "Button size",
-    avatar: "Photo shape"
+    avatar: "Photo shape",
+    btnRadius: "Button corners",
+    linkRadius: "Link corners",
+    btnBorder: "Button border",
+    profileRadius: "Photo corners",
+    profileBorder: "Photo border",
+    headingFont: "Heading typeface",
+    headingWeight: "Heading weight",
+    headingSize: "Heading size",
+    shopRadius: "Shop card corners",
+    collectionRadius: "Collection card corners",
+    bgImage: "Background image"
   };
 
   /** opt - one little choice button inside a style group. */
@@ -750,6 +761,101 @@
     "</div>";
   }
 
+  /** bordersCard - border radius and border colour for buttons, links, profile photo. */
+  function bordersCard(st) {
+    const radOpts = ["square", "rounded", "pill"];
+    return '<div class="card" style="margin-bottom:16px">' +
+      '<div class="card__head"><div><div class="card__title">Borders &amp; corners</div>' +
+        '<div class="card__sub">Border radius and borders for buttons, links and your photo.</div></div></div>' +
+      '<div class="style-groups">' +
+      styleGroup("btnRadius",
+        '<div class="opt-grid">' +
+          radOpts.map((r) => styleOpt("btnRadius", r, r.charAt(0).toUpperCase() + r.slice(1), st.btnRadius === r)).join("") +
+        "</div>") +
+      styleGroup("linkRadius",
+        '<div class="opt-grid">' +
+          radOpts.map((r) => styleOpt("linkRadius", r, r.charAt(0).toUpperCase() + r.slice(1), st.linkRadius === r)).join("") +
+        "</div>") +
+      styleGroup("profileRadius",
+        '<div class="opt-grid">' +
+          S.AVATAR_SHAPES.map((s) => styleOpt("profileRadius", s, s.charAt(0).toUpperCase() + s.slice(1), st.profileRadius === s)).join("") +
+        "</div>") +
+      '<div class="style-group"><div class="style-group__label">Button border colour</div>' +
+        '<div class="swatches">' +
+          '<button type="button" class="swatch' + (st.btnBorder ? " is-on" : "") + '"' +
+            ' data-action="set-style" data-key="btnBorder" data-value="' + esc(st.btnBorder) + '"' +
+            ' style="background:' + (st.btnBorder || "#ffffff") + '" aria-label="Button border ' + esc(st.btnBorder || "none") + '" aria-pressed="' + (st.btnBorder ? "true" : "false") + '"></button>' +
+          '<label class="swatch swatch--pick" title="Custom border colour">' +
+            '<input type="color" value="' + esc(st.btnBorder || "#000000") + '" data-style-input="btnBorder" aria-label="Button border colour" />' +
+          "</label>" +
+        "</div></div>" +
+      '<div class="style-group"><div class="style-group__label">Button border width</div>' +
+        '<div class="range-row">' +
+          '<input class="range" type="range" min="0" max="6" step="1" value="' + st.btnBorderWidth + '" data-style-input="btnBorderWidth" aria-label="Button border width" />' +
+          '<output class="range-out">' + st.btnBorderWidth + "px</output>" +
+        "</div></div>" +
+      '<div class="style-group"><div class="style-group__label">Profile border colour</div>' +
+        '<div class="swatches">' +
+          '<button type="button" class="swatch' + (st.profileBorder ? " is-on" : "") + '"' +
+            ' data-action="set-style" data-key="profileBorder" data-value="' + esc(st.profileBorder) + '"' +
+            ' style="background:' + (st.profileBorder || "#ffffff") + '" aria-label="Profile border ' + esc(st.profileBorder || "none") + '" aria-pressed="' + (st.profileBorder ? "true" : "false") + '"></button>' +
+          '<label class="swatch swatch--pick" title="Custom border colour">' +
+            '<input type="color" value="' + esc(st.profileBorder || "#000000") + '" data-style-input="profileBorder" aria-label="Profile border colour" />' +
+          "</label>" +
+        "</div></div>" +
+      '<div class="style-group"><div class="style-group__label">Shop &amp; collection card corners</div>' +
+        '<div class="opt-grid">' +
+          radOpts.map((r) => styleOpt("shopRadius", r, r.charAt(0).toUpperCase() + r.slice(1), st.shopRadius === r)).join("") +
+          radOpts.map((r) => styleOpt("collectionRadius", r, r.charAt(0).toUpperCase() + r.slice(1), st.collectionRadius === r)).join("") +
+        "</div></div>" +
+      "</div>" +
+    "</div>";
+  }
+
+  /** headingCard - typography for the page heading (name). */
+  function headingCard(st) {
+    const fonts = S.FONTS.map((f) =>
+      styleOpt("headingFont", f.id, '<span style="font-family:' + f.stack.replace(/"/g, "&quot;") + '">' + esc(f.name) + "</span>", st.headingFont === f.id)
+    ).join("");
+    const weights = S.STYLE_WEIGHTS.map((w) =>
+      styleOpt("headingWeight", String(w), String(w), st.headingWeight == w)
+    ).join("");
+    return '<div class="card" style="margin-bottom:16px">' +
+      '<div class="card__head"><div><div class="card__title">Heading</div>' +
+        '<div class="card__sub">Your name at the top of the page.</div></div></div>' +
+      '<div class="style-groups">' +
+      styleGroup("headingFont", '<div class="opt-grid">' + fonts + "</div>") +
+      styleGroup("headingWeight", '<div class="opt-grid">' + weights + "</div>") +
+      styleGroup("headingSize",
+        '<div class="range-row">' +
+          '<input class="range" type="range" min="12" max="28" step="1" value="' + (st.headingSize || st.size) + '" data-style-input="headingSize" aria-label="Heading size" />' +
+          '<output class="range-out">' + (st.headingSize || st.size) + "px</output>" +
+        "</div>") +
+      "</div>" +
+    "</div>";
+  }
+
+  /** bgImageCard - background image for the page. */
+  function bgImageCard(st) {
+    return '<div class="card" style="margin-bottom:16px">' +
+      '<div class="card__head"><div><div class="card__title">Background image</div>' +
+        '<div class="card__sub">Use your own image as the page background.</div></div></div>' +
+      '<div class="style-groups">' +
+      '<div class="style-group"><div class="style-group__label">Image URL</div>' +
+        '<div class="field"><label>Paste an image URL</label>' +
+          '<input class="input" id="f-bg-image" placeholder="https://…" value="' + esc(st.bgImage) + '" /></div>' +
+          '<div class="muted small" style="margin-top:4px">Unsplash, your own photo host, or any direct image link.</div>' +
+        '</div>' +
+      '<div class="style-group"><div class="style-group__label">Fit mode</div>' +
+        '<div class="opt-grid">' +
+          styleOpt("bgImageMode", "cover", "Cover", st.bgImageMode === "cover") +
+          styleOpt("bgImageMode", "contain", "Contain", st.bgImageMode === "contain") +
+          styleOpt("bgImageMode", "auto", "Auto", st.bgImageMode === "auto") +
+        "</div></div>" +
+      "</div>" +
+    "</div>";
+  }
+
   function customizePage() {
     const s = S.state;
     const st = S.style();
@@ -788,7 +894,9 @@
             typographyCard(st) +
             coloursCard(st) +
             buttonsCard(st) +
-
+            bordersCard(st) +
+            headingCard(st) +
+            bgImageCard(st) +
             '<div class="card" style="margin-bottom:16px">' +
               '<div class="card__head"><div><div class="card__title">Profile</div><div class="card__sub">Shown at the top of your page</div></div></div>' +
               '<div class="form-stack">' +
@@ -828,6 +936,28 @@
                 '<button class="switch" role="switch" aria-checked="' + (s.settings.hideBranding ? "true" : "false") + '" data-action="toggle-setting" data-key="hideBranding"></button></div>' +
             "</div>" +
           "</div>" +
+          '<div class="card" style="margin-bottom:16px">' +
+            '<div class="card__head"><div><div class="card__title">Custom themes</div><div class="card__sub">Save your current style as a reusable theme.</div></div></div>' +
+            '<div class="form-stack">' +
+              '<div class="field"><label>Theme name</label><input class="input" id="f-theme-name" placeholder="e.g. Summer vibes"></div>' +
+              '<div class="row" style="justify-content:flex-end;gap:8px">' +
+                '<button class="btn btn--ghost btn--sm" data-action="save-custom-theme">Save as theme</button>' +
+              '</div>' +
+              (S.getCustomThemes().length
+                ? '<div class="theme-grid" style="margin-top:12px">' +
+                  S.getCustomThemes().map((t) =>
+                    '<div class="theme-tile">' +
+                    '<button class="theme-tile__swatch" style="background:' + esc((t.style && t.style.bg) || "#ffffff") + '" data-action="apply-custom-theme" data-theme-id="' + t.id + '" title="' + esc(t.name) + '">' +
+                      '<span style="color:' + esc((t.style && t.style.fg) || "#000000") + '">Aa</span>' +
+                    '</button>' +
+                    '<div class="theme-tile__name">' + esc(t.name) + '</div>' +
+                    '<button class="btn btn--ghost btn--sm" style="margin-top:6px" data-action="delete-custom-theme" data-theme-id="' + t.id + '">' + icon("trash", 12) + "</button>" +
+                    '</div>'
+                  ).join("") +
+                  '</div>'
+                : '<p class="muted small" style="margin-top:8px">No custom themes yet. Save your current style to create one.</p>') +
+            '</div>' +
+          '</div>' +
           '<div style="position:sticky;top:0">' + previewPanel({ inline: true }) +
             '<p class="muted small" style="text-align:center;margin-top:10px">Live preview · saved to this device</p>' +
           "</div>" +
