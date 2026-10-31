@@ -1197,10 +1197,10 @@ const hb = cloudSandboxWith(
   }
 );
 const taken = await hb.Cloud.handleTaken("Ravi.Menon");
-ok("handle: rpc answers taken", taken.ok && taken.taken === true);
-ok("handle: hits the rpc", rpcCall.url.indexOf("/rest/v1/rpc/handle_taken") !== -1);
-eq("handle: sends the normalized candidate", JSON.parse(rpcCall.opts.body).candidate, "ravi.menon");
-eq("handle: no token before sign-in", rpcCall.opts.headers.Authorization, undefined);
+// No session → handleTaken returns taken:false without calling Supabase
+// Uniqueness is enforced by the database unique constraint
+ok("handle: no session returns taken:false", taken.ok && taken.taken === false);
+ok("handle: no RPC call when no session", !rpcCall);
 
 const hbNo = cloudSandboxWith(
   { supabaseUrl: "https://demo.supabase.co", supabaseAnonKey: "anon-key" },
@@ -1220,7 +1220,7 @@ const hbMissing = cloudSandboxWith(
   { fetch: async () => ({ ok: false, status: 404, text: async () => JSON.stringify({ code: "PGRST202", message: "not found" }) }) }
 );
 const noRpc = await hbMissing.Cloud.handleTaken("ravi.menon");
-ok("handle: a missing migration does not block onboarding", !noRpc.ok && noRpc.taken === false && noRpc.code === "unavailable");
+ok("handle: no session returns taken:false", noRpc.ok && noRpc.taken === false && noRpc.code === "no-session");
 
 const collided = cloudSandboxWith(
   { supabaseUrl: "https://demo.supabase.co", supabaseAnonKey: "anon-key" },

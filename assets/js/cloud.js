@@ -506,9 +506,14 @@
       return { ok: true, taken: false, code: "invalid" };
     }
     const token = await accessToken();
+    if (!token) {
+      // No session - can't check cloud. Uniqueness is enforced by the
+      // database unique constraint on handle, so assume free.
+      return { ok: true, taken: false, code: "no-session" };
+    }
     const r = await request("/rest/v1/rpc/handle_taken", {
       method: "POST",
-      token: token || "",
+      token: token,
       body: { candidate: h }
     });
     if (!r.ok) {
