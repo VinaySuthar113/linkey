@@ -736,8 +736,76 @@
       const desc = val("f-setting-seodesc").slice(0, 160);
       if (title.length < 2) return toast("Add a page title", { icon: "alert" });
       S.updateSettings({ seoTitle: title, seoDescription: desc });
+      // Handle avatar upload
+      const avatarInput = document.getElementById("f-settings-avatar");
+      if (avatarInput && avatarInput.files && avatarInput.files[0]) {
+        const file = avatarInput.files[0];
+        if (file.size > 400000) return toast("Image too large (max 400KB)", { icon: "alert" });
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          S.updateUser({ avatar: e.target.result });
+          S.commit();
+          refresh();
+          toast("Avatar updated", { icon: "check" });
+        };
+        reader.readAsDataURL(file);
+      }
+      refresh(); toast("Settings saved", { icon: "check" });
+    },
+    "publish-quick": async () => {
+      const handle = val("f-quick-handle");
+      if (!handle) return toast("Enter a page handle", { icon: "alert" });
+      const clean = handle.replace(/^@+/, "").replace(/[^a-z0-9._-]/gi, "").toLowerCase();
+      if (!clean || clean.length < 3 || clean.length > 30) {
+        return toast("Use 3-30 characters: letters, numbers, dots, dashes, underscores", { icon: "alert" });
+      }
+      if (Cloud && Cloud.isConfigured() && Cloud.handleTaken) {
+        const taken = await Cloud.handleTaken(clean);
+        if (taken && taken.taken) return toast("That handle is taken", { icon: "alert" });
+      }
+      S.updateUser({ handle: clean });
+      S.updateSettings({ seoTitle: S.state.user.name || clean });
+      S.commit();
+      S.state.user.onboarded = true;
       refresh();
-      toast("Settings saved", { icon: "check" });
+      toast("Page published at linkey.app/" + clean, { icon: "check" });
+    },
+    "create-bot": () => {
+      const type = val("f-bot-type") || "influencer";
+      const name = val("f-bot-name") || "";
+      const r = S.createBot(type, name);
+      if (!r.ok) return toast(r.error, { icon: "alert" });
+      refresh();
+      toast("Bot created: " + r.bot.name, { icon: "bot" });
+    },
+    "bot-work": (el) => {
+      const botId = el.dataset.id;
+      const action = el.dataset.action || "create";
+      S.botWork(botId, action).then((r) => {
+        if (r.ok) {
+          refresh();
+          toast("Bot earned $" + r.bot.earnings.toFixed(2), { icon: "bot" });
+        } else {
+          toast(r.error, { icon: "alert" });
+        }
+      });
+    },
+    "bot-toggle-auto": (el) => {
+      const botId = el.dataset.id;
+      const bot = S.state.bots.find((b) => b.id === botId);
+      if (bot) {
+        bot.autoMode = !bot.autoMode;
+        S.commit();
+        refresh();
+        toast(bot.autoMode ? "Auto mode ON" : "Auto mode OFF", { icon: "check" });
+      }
+    },
+    "delete-bot": (el) => {
+      const botId = el.dataset.id;
+      const r = S.deleteBot(botId);
+      if (!r.ok) return toast(r.error, { icon: "alert" });
+      refresh();
+      toast("Bot deleted", { icon: "trash" });
     },
     "toggle-setting": (el) => {
       const k = el.dataset.key;

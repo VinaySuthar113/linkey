@@ -992,95 +992,128 @@
             '<button class="btn btn--dark" data-action="copy-public">' + icon("copy", 14) + " Copy link</button>" +
           "</div>" +
         "</div>" +
-        '<div class="grid customize-grid">' +
-          "<div>" +
-            '<div class="card" style="margin-bottom:16px">' +
-              '<div class="card__head"><div><div class="card__title">Themes</div><div class="card__sub">' + keys.length + " curated looks · click to apply</div></div>" +
-                '<div class="tag">' + esc(S.theme().name) + "</div></div>" +
-              '<div class="theme-grid">' + tiles + "</div>" +
-            "</div>" +
+        '<div class="customize-3panel">' +
+          '<div class="customize-sidebar-left">' +
+            '<div class="customize-scroll">' +
+              '<div class="card" style="margin-bottom:16px">' +
+                '<div class="card__head"><div><div class="card__title">Themes</div><div class="card__sub">' + keys.length + " curated looks · click to apply</div></div>" +
+                  '<div class="tag">' + esc(S.theme().name) + "</div></div>" +
+                '<div class="theme-grid">' + tiles + "</div>" +
+              "</div>" +
 
-            layoutCard() +
+              layoutCard() +
 
-            typographyCard(st) +
-            coloursCard(st) +
-            overlayCard(st) +
-            buttonsCard(st) +
-            weightCard(st) +
-            fillCard(st) +
-            bordersCard(st) +
-            cardCard(st) +
-            tileCard(st) +
-            headingCard(st) +
-            bgImageCard(st) +
-            '<div class="card" style="margin-bottom:16px">' +
-              '<div class="card__head"><div><div class="card__title">Profile</div><div class="card__sub">Shown at the top of your page</div></div></div>' +
-              '<div class="form-stack">' +
-                '<div class="form-row">' +
-                  '<div class="field"><label>Display name</label><input class="input" id="f-profile-title" value="' + esc(s.profile.title) + '" maxlength="60"></div>' +
-                  '<div class="field"><label>Handle</label><input class="input" id="f-profile-handle" value="' + esc(s.user.handle) + '" maxlength="30" data-handle-input></div>' +
-                "</div>" +
-                '<div class="field"><label>Bio</label><textarea class="input" id="f-profile-bio" maxlength="160" rows="2">' + esc(s.profile.bio) + "</textarea></div>" +
-                '<div class="field"><label>Social icons</label><div class="row" style="flex-wrap:wrap;gap:8px">' +
-                  Object.keys(S.SOCIAL_PLATFORMS).map((p) => {
-                    const on = s.profile.socials.includes(p);
-                    return '<button class="btn btn--sm ' + (on ? "btn--dark" : "btn--ghost") + '" data-action="toggle-social" data-platform="' + p + '">' +
-                      icon(S.SOCIAL_PLATFORMS[p].icon, 14) + esc(S.SOCIAL_PLATFORMS[p].name) + "</button>";
-                  }).join("") +
+              '<div class="card" style="margin-bottom:16px">' +
+                '<div class="card__head"><div><div class="card__title">AI Grid</div><div class="card__sub">Smart layout that arranges your links intelligently.</div></div></div>' +
+                '<div class="switch-row"><div><div class="switch-row__title">AI-powered layout</div><div class="switch-row__sub">Let Linkey arrange your links based on type, clicks, and importance.</div></div>' +
+                  '<button class="switch" role="switch" aria-checked="' + (s.settings.aiGrid ? "true" : "false") + '" data-action="toggle-setting" data-key="aiGrid"></button></div>' +
+                '<div class="muted small" style="margin-top:6px">AI analyzes link type, clicks, and position to create the optimal grid layout.</div>' +
+              "</div>" +
+
+              typographyCard(st) +
+              coloursCard(st) +
+              overlayCard(st) +
+              buttonsCard(st) +
+              weightCard(st) +
+              fillCard(st) +
+              bordersCard(st) +
+              cardCard(st) +
+              tileCard(st) +
+              headingCard(st) +
+              bgImageCard(st) +
+
+              '<div class="card" style="margin-bottom:16px">' +
+                '<div class="card__head"><div><div class="card__title">Profile</div><div class="card__sub">Shown at the top of your page</div></div></div>' +
+                '<div class="form-stack">' +
+                  '<div class="form-row">' +
+                    '<div class="field"><label>Display name</label><input class="input" id="f-profile-title" value="' + esc(s.profile.title) + '" maxlength="60"></div>' +
+                    '<div class="field"><label>Handle</label><input class="input" id="f-profile-handle" value="' + esc(s.user.handle) + '" maxlength="30" data-handle-input></div>' +
+                  "</div>" +
+                  '<div class="field"><label>Bio</label><textarea class="input" id="f-profile-bio" maxlength="160" rows="2">' + esc(s.profile.bio) + "</textarea></div>" +
+                  '<div class="field"><label>Social icons</label><div class="row" style="flex-wrap:wrap;gap:8px">' +
+                    Object.keys(S.SOCIAL_PLATFORMS).map((p) => {
+                      const on = s.profile.socials.includes(p);
+                      return '<button class="btn btn--sm ' + (on ? "btn--dark" : "btn--ghost") + '" data-action="toggle-social" data-platform="' + p + '">' +
+                        icon(S.SOCIAL_PLATFORMS[p].icon, 14) + esc(S.SOCIAL_PLATFORMS[p].name) + "</button>";
+                    }).join("") +
                 "</div></div>" +
                 '<div class="row" style="justify-content:flex-end"><button class="btn btn--dark btn--sm" data-action="save-profile">Save profile</button></div>' +
+                "</div>" +
               "</div>" +
+
+              '<div class="card" style="margin-bottom:16px">' +
+                '<div class="card__head"><div><div class="card__title">Search &amp; social</div><div class="card__sub">What Google and social previews show for your link.</div></div></div>' +
+                '<div class="form-stack">' +
+                  '<div class="field"><label>Page title</label><input class="input" id="f-seo-title" value="' + esc(s.settings.seoTitle) + '" maxlength="70"></div>' +
+                  '<div class="field"><label>Description</label><textarea class="input" id="f-seo-desc" maxlength="160" rows="2">' + esc(s.settings.seoDescription) + "</textarea></div>" +
+                  '<div class="field"><label>Your address</label>' +
+                    '<div class="row" style="gap:8px"><input class="input" id="f-public-link" value="' + esc(publicLink()) + '" readonly>' +
+                    '<button class="btn btn--ghost btn--sm" data-action="copy-public" title="Copy">' + icon("copy", 14) + "</button></div>" +
+                    '<div class="muted small" style="margin-top:6px">This link is live as soon as you publish. Custom domains are not available in the beta.</div>' +
+                  "</div>" +
+                  '<div class="row" style="justify-content:flex-end"><button class="btn btn--dark btn--sm" data-action="save-seo">Save search info</button></div>' +
+                "</div>" +
+              "</div>" +
+
+              '<div class="card">' +
+                '<div class="card__head"><div><div class="card__title">Page settings</div><div class="card__sub">How your public page behaves</div></div></div>' +
+                '<div class="switch-row"><div><div class="switch-row__title">Hide Linkey branding</div><div class="switch-row__sub">Remove the small footer badge from your page.</div></div>' +
+                  '<button class="switch" role="switch" aria-checked="' + (s.settings.hideBranding ? "true" : "false") + '" data-action="toggle-setting" data-key="hideBranding"></button></div>' +
             "</div>" +
 
             '<div class="card" style="margin-bottom:16px">' +
-              '<div class="card__head"><div><div class="card__title">Search &amp; social</div><div class="card__sub">What Google and social previews show for your link.</div></div></div>' +
+              '<div class="card__head"><div><div class="card__title">Custom themes</div><div class="card__sub">Save your current style as a reusable theme.</div></div></div>' +
               '<div class="form-stack">' +
-                '<div class="field"><label>Page title</label><input class="input" id="f-seo-title" value="' + esc(s.settings.seoTitle) + '" maxlength="70"></div>' +
-                '<div class="field"><label>Description</label><textarea class="input" id="f-seo-desc" maxlength="160" rows="2">' + esc(s.settings.seoDescription) + "</textarea></div>" +
-                '<div class="field"><label>Your address</label>' +
-                  '<div class="row" style="gap:8px"><input class="input" id="f-public-link" value="' + esc(publicLink()) + '" readonly>' +
-                  '<button class="btn btn--ghost btn--sm" data-action="copy-public" title="Copy">' + icon("copy", 14) + "</button></div>" +
-                  '<div class="muted small" style="margin-top:6px">This link is live as soon as you publish. Custom domains are not available in the beta.</div>' +
-                "</div>" +
-                '<div class="row" style="justify-content:flex-end"><button class="btn btn--dark btn--sm" data-action="save-seo">Save search info</button></div>' +
+                '<div class="field"><label>Theme name</label><input class="input" id="f-theme-name" placeholder="e.g. Summer vibes"></div>' +
+                '<div class="row" style="justify-content:flex-end;gap:8px">' +
+                  '<button class="btn btn--ghost btn--sm" data-action="save-custom-theme">Save as theme</button>' +
+                '</div>' +
+                (S.getCustomThemes().length
+                  ? '<div class="theme-grid" style="margin-top:12px">' +
+                    S.getCustomThemes().map((t) =>
+                      '<div class="theme-tile">' +
+                      '<button class="theme-tile__swatch" style="background:' + esc((t.style && t.style.bg) || "#ffffff") + '" data-action="apply-custom-theme" data-theme-id="' + t.id + '" title="' + esc(t.name) + '">' +
+                        '<span style="color:' + esc((t.style && t.style.fg) || "#000000") + '">Aa</span>' +
+                      '</button>' +
+                      '<div class="theme-tile__name">' + esc(t.name) + '</div>' +
+                      '<button class="btn btn--ghost btn--sm" style="margin-top:6px" data-action="delete-custom-theme" data-theme-id="' + t.id + '">' + icon("trash", 12) + "</button>" +
+                      '</div>'
+                    ).join("") +
+                    '</div>'
+                  : '<p class="muted small" style="margin-top:8px">No custom themes yet. Save your current style to create one.</p>') +
+                '</div>' +
               "</div>" +
             "</div>" +
-
-            '<div class="card">' +
-              '<div class="card__head"><div><div class="card__title">Page settings</div><div class="card__sub">How your public page behaves</div></div></div>' +
-              '<div class="switch-row"><div><div class="switch-row__title">Hide Linkey branding</div><div class="switch-row__sub">Remove the small footer badge from your page.</div></div>' +
-                '<button class="switch" role="switch" aria-checked="' + (s.settings.hideBranding ? "true" : "false") + '" data-action="toggle-setting" data-key="hideBranding"></button></div>' +
-            "</div>" +
-          "</div>" +
-          '<div class="card" style="margin-bottom:16px">' +
-            '<div class="card__head"><div><div class="card__title">Custom themes</div><div class="card__sub">Save your current style as a reusable theme.</div></div></div>' +
-            '<div class="form-stack">' +
-              '<div class="field"><label>Theme name</label><input class="input" id="f-theme-name" placeholder="e.g. Summer vibes"></div>' +
-              '<div class="row" style="justify-content:flex-end;gap:8px">' +
-                '<button class="btn btn--ghost btn--sm" data-action="save-custom-theme">Save as theme</button>' +
-              '</div>' +
-              (S.getCustomThemes().length
-                ? '<div class="theme-grid" style="margin-top:12px">' +
-                  S.getCustomThemes().map((t) =>
-                    '<div class="theme-tile">' +
-                    '<button class="theme-tile__swatch" style="background:' + esc((t.style && t.style.bg) || "#ffffff") + '" data-action="apply-custom-theme" data-theme-id="' + t.id + '" title="' + esc(t.name) + '">' +
-                      '<span style="color:' + esc((t.style && t.style.fg) || "#000000") + '">Aa</span>' +
-                    '</button>' +
-                    '<div class="theme-tile__name">' + esc(t.name) + '</div>' +
-                    '<button class="btn btn--ghost btn--sm" style="margin-top:6px" data-action="delete-custom-theme" data-theme-id="' + t.id + '">' + icon("trash", 12) + "</button>" +
-                    '</div>'
-                  ).join("") +
-                  '</div>'
-                : '<p class="muted small" style="margin-top:8px">No custom themes yet. Save your current style to create one.</p>') +
-            '</div>' +
           '</div>' +
-          '<div style="position:sticky;top:0">' + previewPanel({ inline: true }) +
+          '<div class="customize-preview-center">' +
+            previewPanel({ inline: true, center: true }) +
             '<p class="muted small" style="text-align:center;margin-top:10px">Live preview · saved to this device</p>' +
-          "</div>" +
+          '</div>' +
+          '<div class="customize-sidebar-right">' +
+            '<div class="card" style="margin-bottom:16px">' +
+              '<div class="card__head"><div><div class="card__title">Quick publish</div><div class="card__sub">Make your page live</div></div></div>' +
+              '<div class="form-stack">' +
+                '<div class="field"><label>Page handle</label><input class="input" id="f-quick-handle" value="' + esc(s.user.handle || "") + '" maxlength="30" placeholder="yourname"></div>' +
+                '<div class="row" style="justify-content:flex-end;gap:8px">' +
+                  '<button class="btn btn--dark btn--sm" data-action="publish-quick">Publish page</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="muted small" style="margin-top:8px">Your page will be live at linkey.app/yourname</div>' +
+            "</div>" +
+            '<div class="card" style="margin-bottom:16px">' +
+              '<div class="card__head"><div><div class="card__title">Quick actions</div></div></div>' +
+              '<div class="form-stack">' +
+                '<button class="btn btn--soft btn--block btn--sm" data-action="open-bio" style="width:100%">' + icon("external", 14) + " Open public page</button>" +
+                '<button class="btn btn--soft btn--block btn--sm" data-action="copy-public" style="width:100%">' + icon("copy", 14) + " Copy page link</button>" +
+                '<button class="btn btn--soft btn--block btn--sm" data-action="qr-public" style="width:100%">' + icon("qr", 14) + " Download QR code</button>" +
+              '</div>' +
+            "</div>" +
+          '</div>' +
         "</div>" +
       "</div>"
     );
   }
+
 
   /* ------------------------------------------------------------
      Insight
@@ -1443,10 +1476,19 @@
         '<div class="card" style="margin-bottom:16px">' +
           '<div class="card__head"><div class="card__title">My information</div></div>' +
           '<div class="form-stack">' +
+            '<div class="form-stack">' +
             '<div class="field"><label>Name</label><input class="input" id="f-user-name" value="' + esc(s.user.name) + '"></div>' +
             '<div class="field"><label>Username</label><input class="input" id="f-user-handle" value="' + esc(s.user.handle) + '">' +
               (s.user.handle ? '<div class="muted small" style="margin-top:4px">Your page lives at ' + esc(publicLink(s.user.handle)) + "</div>" : "") +
-              (s.user.handle ? '<div style="margin:8px 0"><img src="data:image/svg+xml;base64,' + S.base64Encode(typeof QR !== "undefined" && QR ? QR.encode(publicLink(s.user.handle), 120) : "") + '" alt="QR code" style="width:120px;height:120px;border:1px solid #e6e6e6;border-radius:8px"></div>' : "") +
+              '<div style="margin:12px 0"><div style="display:flex;align-items:center;gap:12px">' +
+                '<div style="width:80px;height:80px;border-radius:50%;overflow:hidden;border:2px solid var(--line-2);background:#f4f4f4;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+                  (s.user.avatar ? '<img src="' + esc(s.user.avatar) + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover" />' : icon("user", 32)) +
+                '</div>' +
+                '<div class="field"><label>Profile picture</label><input type="file" id="f-user-avatar" accept="image/*" style="width:100%;padding:8px;border:1px dashed var(--line-2);border-radius:var(--radius-sm);background:#fafafa;cursor:pointer" /></label>' +
+                  '<div class="muted small" style="margin-top:4px">Upload a square image (max 400KB)</div>' +
+                '</div>' +
+              "</div>" +
+              '<div style="margin-top:12px"><img src="data:image/svg+xml;base64,' + S.base64Encode(typeof QR !== "undefined" && QR ? QR.encode(publicLink(s.user.handle), 120) : "") + '" alt="QR code" style="width:120px;height:120px;border:1px solid #e6e6e6;border-radius:8px"></div>' +
             "</div>" +
             '<div class="field"><label>Email</label><input class="input" id="f-user-email" value="' + esc(s.user.email) + '"' +
               (s.auth && s.auth.cloud ? " readonly" : "") + ">" +
@@ -1496,6 +1538,14 @@
         '<div class="page-head"><div><h1>Settings</h1><p>Domain, discovery and privacy.</p></div></div>' +
         '<div class="card" style="margin-bottom:16px"><div class="card__head"><div class="card__title">Your page</div></div>' +
           '<div class="form-stack">' +
+          '<div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">' +
+            '<div style="width:64px;height:64px;border-radius:50%;overflow:hidden;border:2px solid var(--line-2);background:#f4f4f4;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+              (s.user.avatar ? '<img src="' + esc(s.user.avatar) + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover" />' : icon("user", 28)) +
+            '</div>' +
+            '<div class="field"><label>Profile picture</label><input type="file" id="f-settings-avatar" accept="image/*" style="width:100%;padding:8px;border:1px dashed var(--line-2);border-radius:var(--radius-sm);background:#fafafa;cursor:pointer" /></label>' +
+              '<div class="muted small" style="margin-top:4px">Upload a square image (max 400KB)</div>' +
+            '</div>' +
+          '</div>' +
             '<div class="field"><label>Public link</label>' +
               '<div class="row" style="gap:8px">' +
                 '<input class="input" id="f-public-link" readonly value="' + esc(S.publicUrl()) + '">' +

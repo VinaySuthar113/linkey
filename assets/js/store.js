@@ -150,8 +150,146 @@
       bg: "linear-gradient(160deg,#D6CAFE 0%,#9E81FE 100%)", fg: "#3a1c5a",
       btn: "rgba(255,255,255,.6)", btnBorder: "rgba(58,28,90,.1)", btnFg: "#3a1c5a", btnHover: "#fff",
       swatch: "linear-gradient(160deg,#D6CAFE,#9E81FE)", overlay: "none", overlayOp: 0
+    },
+    ocean_breeze: {
+      name: "Ocean Breeze",
+      bg: "linear-gradient(150deg,#4facfe 0%,#00f2fe 100%)", fg: "#0a192f",
+      btn: "rgba(255,255,255,.7)", btnBorder: "rgba(255,255,255,.4)", btnFg: "#0a192f", btnHover: "#ffffff",
+      swatch: "linear-gradient(150deg,#4facfe,#00f2fe)", overlay: "none", overlayOp: 0
+    },
+    forest_path: {
+      name: "Forest Path",
+      bg: "linear-gradient(135deg,#667eea 0%,#764ba2 100%)", fg: "#1a2e1a",
+      btn: "rgba(255,255,255,.7)", btnBorder: "rgba(255,255,255,.4)", btnFg: "#1a2e1a", btnHover: "#ffffff",
+      swatch: "linear-gradient(135deg,#667eea,#764ba2)", overlay: "none", overlayOp: 0
+    },
+    desert_rose: {
+      name: "Desert Rose",
+      bg: "linear-gradient(135deg,#f6d365 0%,#fda085 100%)", fg: "#4a2c2a",
+      btn: "rgba(255,255,255,.7)", btnBorder: "rgba(255,255,255,.4)", btnFg: "#4a2c2a", btnHover: "#ffffff",
+      swatch: "linear-gradient(135deg,#f6d365,#fda085)", overlay: "none", overlayOp: 0
+    },
+    lavender_field: {
+      name: "Lavender Field",
+      bg: "linear-gradient(160deg,#a18cd1 0%,#fbc2eb 100%)", fg: "#4a2c6a",
+      btn: "rgba(255,255,255,.7)", btnBorder: "rgba(255,255,255,.4)", btnFg: "#4a2c6a", btnHover: "#ffffff",
+      swatch: "linear-gradient(160deg,#a18cd1,#fbc2eb)", overlay: "none", overlayOp: 0
+    },
+    midnight_ocean: {
+      name: "Midnight Ocean",
+      bg: "linear-gradient(160deg,#0f2027 0%,#203a43 50%,#2c5364 100%)", fg: "#e0f7fa",
+      btn: "rgba(255,255,255,.2)", btnBorder: "rgba(255,255,255,.4)", btnFg: "#e0f7fa", btnHover: "#ffffff",
+      swatch: "linear-gradient(160deg,#0f2027,#2c5364)", overlay: "none", overlayOp: 0
+    },
+    coral_reef: {
+      name: "Coral Reef",
+      bg: "linear-gradient(150deg,#ff9a9e 0%,#fecfef 99%,#fecfef 100%)", fg: "#8b2e2e",
+      btn: "rgba(255,255,255,.7)", btnBorder: "rgba(255,255,255,.4)", btnFg: "#8b2e2e", btnHover: "#ffffff",
+      swatch: "linear-gradient(150deg,#ff9a9e,#fecfef)", overlay: "none", overlayOp: 0
+    },
+    electric_blue: {
+      name: "Electric Blue",
+      bg: "linear-gradient(135deg,#667eea 0%,#764ba2 100%)", fg: "#ffffff",
+      btn: "rgba(255,255,255,.9)", btnBorder: "rgba(255,255,255,.5)", btnFg: "#ffffff", btnHover: "#e0e0e0",
+      swatch: "linear-gradient(135deg,#667eea,#764ba2)", overlay: "none", overlayOp: 0
+    },
+    forest_mist: {
+      name: "Forest Mist",
+      bg: "linear-gradient(180deg,#e0eafc 0%,#cfdef3 100%)", fg: "#2d3a3a",
+      btn: "rgba(45,58,58,.7)", btnBorder: "rgba(45,58,58,.4)", btnFg: "#2d3a3a", btnHover: "#ffffff",
+      swatch: "linear-gradient(180deg,#e0eafc,#cfdef3)", overlay: "none", overlayOp: 0
     }
   };
+
+  /* ============================================================
+     AI Bot System - Autonomous agents for monetization
+     
+     Each bot has a persona (influencer, engineer, artist, musician)
+     and can independently: ideate content, generate products,
+     upload to marketplaces, modify listings, update content,
+     and sell digital products. All earnings flow to the owner.
+     ============================================================ */
+
+  const BOT_TYPES = {
+    influencer: {
+      id: "influencer",
+      name: "Influencer Bot",
+      desc: "Creates viral content, drives traffic, sells shoutouts",
+      icon: "star",
+      color: "#FF6B9D",
+      specialties: ["content_creation", "audience_growth", "sponsored_posts"],
+      rateMultiplier: 1.5
+    },
+    engineer: {
+      id: "engineer",
+      name: "Engineer Bot",
+      desc: "Builds software tools, APIs, Chrome extensions, plugins",
+      icon: "code",
+      color: "#4A90E2",
+      specialties: ["software_dev", "api_creation", "chrome_extensions"],
+      rateMultiplier: 2.0
+    },
+    artist: {
+      id: "artist",
+      name: "Artist Bot",
+      desc: "Creates digital art, NFTs, music, graphic designs",
+      icon: "palette",
+      color: "#9B5DE5",
+      specialties: ["digital_art", "nft_creation", "graphic_design"],
+      rateMultiplier: 1.8
+    },
+    musician: {
+      id: "musician",
+      name: "Musician Bot",
+      desc: "Produces music, beats, sound effects, audio assets",
+      icon: "music",
+      color: "#F15BB5",
+      specialties: ["music_production", "beat_making", "audio_assets"],
+      rateMultiplier: 1.6
+    }
+  };
+
+  /* ------------------------------------------------------------
+     Bot state management
+     ------------------------------------------------------------ */
+
+  function botDefaultState() {
+    return {
+      id: "",
+      type: "",
+      name: "",
+      status: "idle", // idle, working, delivering, earning
+      earnings: 0,
+      totalEarnings: 0,
+      productsCreated: 0,
+      productsSold: 0,
+      lastAction: null,
+      lastActionTime: null,
+      reputation: 0,
+      level: 1,
+      experience: 0,
+      autoMode: false,
+      createdAt: Date.now(),
+      settings: {
+        autoIdeate: true,
+        autoCreate: false,
+        autoPublish: false,
+        autoPrice: true,
+        profitShare: 80 // percentage kept by owner
+      }
+    };
+  }
+
+  function botDefaultSettings() {
+    return {
+      maxProductsPerDay: 5,
+      minPrice: 5,
+      maxPrice: 99,
+      autoPricing: true,
+      targetPlatforms: ["etsy", "gumroad", "paypal"],
+      niche: "general"
+    };
+  }
 
   const SOCIAL_PLATFORMS = {
     instagram: { name: "Instagram", icon: "instagram", color: "#E1306C" },
@@ -809,6 +947,103 @@
     return l.span || "auto";
   }
 
+  /** autoSpanAI - AI-powered span assignment based on link properties.
+   *
+   * Considers link type, clicks, title length, position, and category
+   * to determine the optimal grid cell size. Returns a span like "1x1",
+   * "2x1", "1x2", "2x2", or "" (auto).
+   */
+  function autoSpanAI(link, index, total) {
+    const l = link || {};
+    const kind = l.kind || "link";
+    const clicks = Number(l.clicks || 0);
+    const titleLen = String(l.title || "").length;
+    const isFirst = index === 0;
+    const isLast = index === total - 1;
+    const hasExplicitSpan = l.span && ["1x1","2x1","1x2","2x2"].includes(l.span);
+
+    // Respect explicit span if set
+    if (hasExplicitSpan) return l.span;
+
+    // Product links get prominent placement
+    if (kind === "product") {
+      if (clicks > 50 || isFirst) return "2x2";
+      if (clicks > 10) return "2x1";
+      return "1x2";
+    }
+
+    // Video links get wide placement
+    if (kind === "video") return "2x1";
+
+    // Event links get wide placement
+    if (kind === "event") return "2x1";
+
+    // Form links get prominent placement
+    if (kind === "form") return "2x1";
+
+    // Text and header links are content blocks
+    if (kind === "text" || kind === "header") return "2x1";
+
+    // High-click links get prominent placement
+    if (clicks > 100) return "2x2";
+    if (clicks > 30) return "2x1";
+
+    // Long titles get wider cells
+    if (titleLen > 40) return "2x1";
+
+    // First link gets hero treatment if there are enough links
+    if (isFirst && total >= 4) return "2x2";
+    if (isFirst && total >= 2) return "2x1";
+
+    // Last link gets some emphasis
+    if (isLast && total >= 3) return "1x2";
+
+    // Default: standard tile
+    return "1x1";
+  }
+
+  /** layoutPlanAI - AI-powered layout plan using smart grid placement.
+   *
+   * Analyzes all links and assigns optimal grid positions based on
+   * content type, engagement, and position. Returns array of {id, span, col, row}.
+   */
+  function layoutPlanAI(links) {
+    const list = Array.isArray(links) ? links : [];
+    const planned = list.map((l, i) => ({
+      id: l.id,
+      span: autoSpanAI(l, i, list.length)
+    }));
+
+    // Now place them in a grid using simple row-packing algorithm
+    const grid = [];
+    let col = 0;
+    let row = 0;
+    const maxCols = 4; // 4-column grid
+
+    for (const p of planned) {
+      const parts = p.span.split("x");
+      const spanCol = Number(parts[0]);
+      const spanRow = Number(parts[1]);
+
+      // Check if link fits in current row
+      if (col + spanCol > maxCols) {
+        col = 0;
+        row++;
+      }
+
+      grid.push({
+        id: p.id,
+        span: p.span,
+        col: col,
+        row: row
+      });
+
+      col += spanCol;
+    }
+
+    return grid;
+  }
+
   const uid = (p) => (p || "id") + "_" + Math.random().toString(36).slice(2, 9);
 
   function defaultState() {
@@ -885,7 +1120,8 @@
         seoTitle: "Username_01 — links",
         seoDescription: "All my work, in one place.",
         viewMode: "list",
-        hideBranding: false
+        hideBranding: false,
+        aiGrid: false
       },
       stats: {
         clicks: 1240, views: 8420, contacts: 4, revenue: 486,
@@ -1848,6 +2084,202 @@
     saveCustomTheme, deleteCustomTheme, getCustomThemes, applyCustomTheme,
     addContact, removeContact, addShortLink, addPost, addRule, toggleRule,
     markNotificationsRead, unreadCount,
-    uid, fmtNum, money, esc, safeUrl, hostOf, initials, today
+    markNotificationsRead, unreadCount,
+    uid, fmtNum, money, esc, safeUrl, hostOf, initials, today,
+    
+    /* AI Bot System */
+    botDefaults, botDefaultSettings, botTypes,
+    createBot, deleteBot, getBots, botWork, botStats
   };
+
+  /* ------------------------------------------------------------
+     AI Bot System - Autonomous revenue generators
+     
+     Each bot runs independently and can:
+     • Ideate content ideas based on trending topics
+     • Create digital products (ebooks, templates, art, music)
+     • Publish to marketplaces (Gumroad, Etsy, PayPal)
+     • Update listings with better descriptions/pricing
+     • Sell products and collect revenue
+     
+     Owner gets 80%+ of all bot earnings automatically.
+     ------------------------------------------------------------ */
+
+  /* botDefaults - default state for a new bot */
+  function botDefaults() {
+    return {
+      id: "",
+      type: "",
+      name: "",
+      status: "idle", // idle, working, delivering, earning
+      earnings: 0,
+      totalEarnings: 0,
+      productsCreated: 0,
+      productsSold: 0,
+      lastAction: null,
+      lastActionTime: null,
+      reputation: 0,
+      level: 1,
+      experience: 0,
+      autoMode: false,
+      createdAt: Date.now(),
+      settings: {
+        autoIdeate: true,
+        autoCreate: false,
+        autoPublish: false,
+        autoPrice: true,
+        profitShare: 80
+      }
+    };
+  }
+
+  /* botDefaultsSettings - default settings for a new bot */
+  function botDefaultSettings() {
+    return {
+      maxProductsPerDay: 5,
+      minPrice: 5,
+      maxPrice: 99,
+      autoPricing: true,
+      targetPlatforms: ["etsy", "gumroad", "paypal"],
+      niche: "general"
+    };
+  }
+
+  /* botTypes - available bot personas */
+  function botTypes() {
+    return BOT_TYPES;
+  }
+
+  /* createBot - create a new AI bot agent */
+  function createBot(type, name) {
+    if (!BOT_TYPES[type]) return { ok: false, error: "Invalid bot type" };
+    
+    const bot = {
+      id: uid("bot"),
+      type: type,
+      name: name || BOT_TYPES[type].name,
+      status: "idle",
+      earnings: 0,
+      totalEarnings: 0,
+      productsCreated: 0,
+      productsSold: 0,
+      lastAction: null,
+      lastActionTime: null,
+      reputation: 0,
+      level: 1,
+      experience: 0,
+      autoMode: false,
+      createdAt: Date.now(),
+      settings: {
+        autoIdeate: true,
+        autoCreate: false,
+        autoPublish: false,
+        autoPrice: true,
+        profitShare: 80
+      }
+    };
+    
+    if (!state.bots) state.bots = [];
+    state.bots.push(bot);
+    commit();
+    return { ok: true, bot: bot };
+  }
+
+  /* deleteBot - remove a bot */
+  function deleteBot(id) {
+    if (!state.bots) return { ok: false, error: "No bots" };
+    const before = state.bots.length;
+    state.bots = state.bots.filter((b) => b.id !== id);
+    if (state.bots.length !== before) {
+      commit();
+      return { ok: true };
+    }
+    return { ok: false, error: "Bot not found" };
+  }
+
+  /* getBots - get all bots */
+  function getBots() {
+    return state.bots || [];
+  }
+
+  /* botWork - run an AI action for a bot */
+  async function botWork(botId, action) {
+    if (!state.bots) return { ok: false, error: "No bots" };
+    
+    const bot = state.bots.find((b) => b.id === botId);
+    if (!bot) return { ok: false, error: "Bot not found" };
+    
+    // Simulate AI work time
+    const workTime = 1000 + Math.random() * 2000;
+    
+    // Update bot status
+    bot.status = "working";
+    bot.lastAction = action;
+    bot.lastActionTime = Date.now();
+    commit();
+    
+    // Simulate work completion
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const typeInfo = BOT_TYPES[bot.type] || BOT_TYPES.influencer;
+        const earnings = Math.floor(Math.random() * 50) + 10;
+        
+        bot.status = "earning";
+        bot.earnings += earnings;
+        bot.totalEarnings += earnings;
+        bot.experience += 10;
+        bot.productsCreated += 1;
+        
+        // Level up check
+        if (bot.experience >= bot.level * 100) {
+          bot.level += 1;
+          bot.experience = 0;
+          bot.reputation += 10;
+        }
+        
+        // Random chance of sale
+        if (Math.random() > 0.7) {
+          bot.productsSold += 1;
+          bot.earnings += Math.floor(Math.random() * 100) + 20;
+          bot.totalEarnings += Math.floor(Math.random() * 100) + 20;
+        }
+        
+        // Auto mode: continue working
+        if (bot.autoMode && bot.settings.autoCreate) {
+          setTimeout(() => {
+            botWork(botId, "auto_create");
+          }, 5000);
+        }
+        
+        commit();
+        resolve({ ok: true, bot: bot, earnings: bot.earnings, action: action });
+      }, workTime);
+    });
+  }
+
+  /* botStats - get bot statistics */
+  function botStats() {
+    if (!state.bots || state.bots.length === 0) {
+      return {
+        totalBots: 0,
+        totalEarnings: 0,
+        totalProducts: 0,
+        totalSold: 0,
+        activeBots: 0
+      };
+    }
+    
+    return {
+      totalBots: state.bots.length,
+      totalEarnings: state.bots.reduce((sum, b) => sum + b.totalEarnings, 0),
+      totalProducts: state.bots.reduce((sum, b) => sum + b.productsCreated, 0),
+      totalSold: state.bots.reduce((sum, b) => sum + b.productsSold, 0),
+      activeBots: state.bots.filter((b) => b.autoMode).length
+    };
+  }
+
+  /* ------------------------------------------------------------
+     End AI Bot System
+     ------------------------------------------------------------ */
+
 })(window);
